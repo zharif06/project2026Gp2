@@ -1,0 +1,6 @@
+# Create new vercel.json
+echo '{
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+}' > vercel.json
