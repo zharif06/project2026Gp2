@@ -3,7 +3,7 @@
 import { Eye, EyeOff, Mail, Lock, LogIn, ArrowRight, Key, X, Send, Loader2, Utensils } from "lucide-react";
 import { useState } from "react";
 import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { getUserRole } from "@/lib/roleManager";
@@ -125,13 +125,31 @@ export default function Login() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!resetEmail) {
       setResetMessage({ type: "error", text: "Please enter your email address" });
       return;
     }
     
     setResetLoading(true);
+    
     try {
+      // FIRST: Check if email exists in Firestore users collection
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", resetEmail));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        // Email not registered - show error immediately
+        setResetMessage({ 
+          type: "error", 
+          text: "❌ No account found with this email address. Please register first." 
+        });
+        setResetLoading(false);
+        return;
+      }
+      
+      // Email exists, send reset email
       await sendPasswordResetEmail(auth, resetEmail);
       setResetMessage({ 
         type: "success", 
@@ -144,17 +162,10 @@ export default function Login() {
         setShowForgotPassword(false);
         setResetMessage({ type: "", text: "" });
       }, 3000);
+      
     } catch (error: any) {
       console.error("Reset password error:", error);
-      if (error.code === "auth/user-not-found") {
-        setResetMessage({ type: "error", text: "No account found with this email address" });
-      } else if (error.code === "auth/invalid-email") {
-        setResetMessage({ type: "error", text: "Invalid email format" });
-      } else if (error.code === "auth/too-many-requests") {
-        setResetMessage({ type: "error", text: "Too many requests. Please try again later" });
-      } else {
-        setResetMessage({ type: "error", text: error.message });
-      }
+      setResetMessage({ type: "error", text: error.message });
     } finally {
       setResetLoading(false);
     }
