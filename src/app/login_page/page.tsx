@@ -123,6 +123,7 @@ export default function Login() {
     }
   };
 
+  // VERSION 2: Check Firestore first - Only registered users get email
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -134,13 +135,12 @@ export default function Login() {
     setResetLoading(true);
     
     try {
-      // FIRST: Check if email exists in Firestore users collection
+      // Check if email exists in Firestore users collection
       const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", resetEmail));
+      const q = query(usersRef, where("email", "==", resetEmail.toLowerCase()));
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
-        // Email not registered - show error immediately
         setResetMessage({ 
           type: "error", 
           text: "❌ No account found with this email address. Please register first." 
@@ -151,13 +151,13 @@ export default function Login() {
       
       // Email exists, send reset email
       await sendPasswordResetEmail(auth, resetEmail);
+      
       setResetMessage({ 
         type: "success", 
         text: "✅ Password reset email sent! Check your inbox (including spam folder)." 
       });
       setResetEmail("");
       
-      // Close modal after 3 seconds
       setTimeout(() => {
         setShowForgotPassword(false);
         setResetMessage({ type: "", text: "" });
@@ -165,7 +165,10 @@ export default function Login() {
       
     } catch (error: any) {
       console.error("Reset password error:", error);
-      setResetMessage({ type: "error", text: error.message });
+      setResetMessage({ 
+        type: "error", 
+        text: `❌ Error: ${error.message}` 
+      });
     } finally {
       setResetLoading(false);
     }
@@ -392,7 +395,7 @@ export default function Login() {
                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 rounded-lg hover:shadow-lg disabled:opacity-50 font-semibold transition-all flex items-center justify-center gap-2"
               >
                 {resetLoading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
                 ) : (
                   <><Send className="w-4 h-4" /> Send Reset Link</>
                 )}
