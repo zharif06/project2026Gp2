@@ -81,12 +81,16 @@ export default function StaffPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const router = useRouter();
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -220,14 +224,40 @@ export default function StaffPage() {
       />
       
       <div className="flex">
-        <StaffSidebar 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab}
-          isOpen={sidebarOpen}
-          stats={getStats()}
-        />
+        {/* Mobile sidebar overlay */}
+        <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarOpen ? 'visible' : 'invisible'}`}>
+          <div 
+            className={`absolute inset-0 bg-black transition-opacity duration-300 ${sidebarOpen ? 'opacity-50' : 'opacity-0'}`}
+            onClick={closeSidebar}
+          />
+          <div className={`absolute left-0 top-0 h-full w-64 bg-white shadow-xl transition-transform duration-300 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <StaffSidebar 
+              activeTab={activeTab} 
+              onTabChange={(tab) => {
+                setActiveTab(tab);
+                closeSidebar();
+              }}
+              isOpen={true}
+              onClose={closeSidebar}
+              stats={getStats()}
+            />
+          </div>
+        </div>
+
+        {/* Desktop sidebar - always visible */}
+        <div className="hidden lg:block">
+          <StaffSidebar 
+            activeTab={activeTab} 
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              closeSidebar();
+            }}
+            isOpen={true}
+            stats={getStats()}
+          />
+        </div>
         
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'} p-3 sm:p-4 md:p-6`}>
+        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
           <div className="max-w-7xl mx-auto">
             {activeTab === "dashboard" && (
               <>
