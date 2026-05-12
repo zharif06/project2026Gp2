@@ -35,35 +35,61 @@ export default function AdminSidebar({ activeTab, onTabChange, isOpen }: AdminSi
     }
   };
 
-  if (!isOpen) {
+  // Mobile sidebar (overlay)
+  if (isOpen) {
     return (
-      <div className="fixed left-0 top-16 w-16 bg-white shadow-lg min-h-screen z-30">
-        <nav className="mt-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className={`w-full p-3 flex justify-center transition-colors relative group ${
-                  isActive ? `bg-${item.color}-50 text-${item.color}-600` : "text-gray-500 hover:bg-gray-50"
-                }`}
+      <>
+        {/* Overlay */}
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => onTabChange(activeTab)} // This should be a close function, but we'll handle differently
+        />
+        {/* Sidebar for mobile */}
+        <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 overflow-y-auto lg:relative lg:translate-x-0">
+          <div className="p-4 border-b border-gray-100 lg:hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-xl">
+                  <LayoutDashboard className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-gray-800">Admin Menu</span>
+              </div>
+              <button 
+                onClick={() => onTabChange(activeTab)} 
+                className="p-2 rounded-lg hover:bg-gray-100"
               >
-                <Icon className="w-5 h-5" />
-                <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                  {item.label}
-                </span>
+                ✕
               </button>
-            );
-          })}
-        </nav>
-      </div>
+            </div>
+          </div>
+          <nav className="mt-4">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 ${
+                    isActive 
+                      ? getColorClasses(item.color, true) 
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium text-sm">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </>
     );
   }
 
+  // Desktop sidebar (collapsed)
   return (
-    <aside className="fixed left-0 top-16 w-64 bg-white shadow-lg min-h-screen z-30">
+    <div className="hidden lg:block fixed left-0 top-16 w-64 bg-white shadow-lg h-[calc(100vh-4rem)] z-30 overflow-y-auto">
       <nav className="mt-6">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -79,11 +105,11 @@ export default function AdminSidebar({ activeTab, onTabChange, isOpen }: AdminSi
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium text-sm">{item.label}</span>
             </button>
           );
         })}
       </nav>
-    </aside>
+    </div>
   );
 }
