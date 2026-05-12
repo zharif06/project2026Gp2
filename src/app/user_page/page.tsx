@@ -51,6 +51,10 @@ export default function UserPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const router = useRouter();
 
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -75,7 +79,7 @@ export default function UserPage() {
 
   const handleSetCurrentPage = (page: PageType) => {
     setCurrentPage(page);
-    setIsSidebarOpen(false);
+    closeSidebar();
   };
 
   const renderPage = () => {
@@ -164,39 +168,29 @@ export default function UserPage() {
       </header>
 
       {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
+      <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${isSidebarOpen ? 'visible' : 'invisible'}`}>
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          className={`absolute inset-0 bg-black transition-opacity duration-300 ${isSidebarOpen ? 'opacity-50' : 'opacity-0'}`}
+          onClick={closeSidebar}
         />
-      )}
-
-      {/* Sidebar */}
-      <div className="relative flex">
+        
+        {/* Sidebar */}
         <aside 
-          className={`
-            fixed lg:relative top-0 left-0 w-72 shadow-2xl z-50 transition-transform duration-300 ease-in-out
-            ${isDarkMode ? 'bg-gray-800' : 'bg-white'}
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            lg:translate-x-0
-          `}
-          style={{ top: 0, height: '100vh', display: 'flex', flexDirection: 'column' }}
+          className={`absolute left-0 top-0 w-72 h-full bg-white shadow-2xl transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          {/* Sidebar Header - Mobile only */}
-          <div className={`p-4 border-b flex justify-between items-center lg:hidden ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
             <div className="flex items-center gap-2">
               <Utensils className="w-6 h-6 text-orange-500" />
               <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Menu</span>
             </div>
             <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+              onClick={closeSidebar}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <X className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
             </button>
           </div>
 
-          {/* User Profile Summary */}
           <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
@@ -211,7 +205,6 @@ export default function UserPage() {
             </div>
           </div>
 
-          {/* Navigation - All menu items */}
           <nav className="flex-1 overflow-y-auto py-2 px-4 space-y-1">
             <button
               onClick={() => handleSetCurrentPage("dashboard")}
@@ -313,7 +306,6 @@ export default function UserPage() {
               </button>
             </div>
 
-            {/* Need Help Button - Moved up inside nav, right after Contact Us */}
             <div className="pt-4 mt-2">
               <button
                 onClick={() => setShowTutorial(true)}
@@ -321,6 +313,125 @@ export default function UserPage() {
                   isDarkMode 
                     ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                     : 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-600 hover:from-orange-100 hover:to-red-100'
+                }`}
+              >
+                <HelpCircle className="w-5 h-5" />
+                <span className="font-medium">Need Help?</span>
+              </button>
+            </div>
+          </nav>
+        </aside>
+      </div>
+
+      {/* Desktop sidebar - always visible on large screens */}
+      <div className="relative flex">
+        <aside className="hidden lg:block fixed lg:relative top-0 left-0 w-72 shadow-2xl z-30 h-screen overflow-y-auto bg-white">
+          <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <User className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {user?.email?.split('@')[0]}
+                </h3>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Food Lover</p>
+              </div>
+            </div>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto py-2 px-4 space-y-1">
+            <button
+              onClick={() => handleSetCurrentPage("dashboard")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                currentPage === "dashboard" 
+                  ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => handleSetCurrentPage("restaurants")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                currentPage === "restaurants" 
+                  ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+              }`}
+            >
+              <Compass className="w-5 h-5" />
+              <span className="font-medium">Find Restaurants</span>
+            </button>
+
+            <button
+              onClick={() => handleSetCurrentPage("reviews")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                currentPage === "reviews" 
+                  ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+              }`}
+            >
+              <Star className="w-5 h-5" />
+              <span className="font-medium">My Reviews</span>
+            </button>
+            
+            <div className={`pt-4 mt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+              <button
+                onClick={() => handleSetCurrentPage("profile")}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  currentPage === "profile" 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                <User className="w-5 h-5" />
+                <span className="font-medium">My Profile</span>
+              </button>
+
+              <button
+                onClick={() => handleSetCurrentPage("editProfile")}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  currentPage === "editProfile" 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                <Settings className="w-5 h-5" />
+                <span className="font-medium">Edit Profile</span>
+              </button>
+
+              <button
+                onClick={() => handleSetCurrentPage("about")}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  currentPage === "about" 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                <Info className="w-5 h-5" />
+                <span className="font-medium">About Us</span>
+              </button>
+
+              <button
+                onClick={() => handleSetCurrentPage("contact")}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  currentPage === "contact" 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                <Phone className="w-5 h-5" />
+                <span className="font-medium">Contact Us</span>
+              </button>
+            </div>
+
+            <div className="pt-4 mt-2">
+              <button
+                onClick={() => setShowTutorial(true)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                  'bg-gradient-to-r from-orange-50 to-red-50 text-orange-600 hover:from-orange-100 hover:to-red-100'
                 }`}
               >
                 <HelpCircle className="w-5 h-5" />
