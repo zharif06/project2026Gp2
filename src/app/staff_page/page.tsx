@@ -227,9 +227,8 @@ export default function StaffPage() {
           stats={getStats()}
         />
         
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'} p-6`}>
+        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'} p-3 sm:p-4 md:p-6`}>
           <div className="max-w-7xl mx-auto">
-            {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
               <>
                 <DashboardStats 
@@ -241,7 +240,7 @@ export default function StaffPage() {
                   onRefresh={refreshData}
                 />
                 <div className="mt-6">
-                  <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Restaurants</h2>
+                  <h2 className="text-base sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Recent Restaurants</h2>
                   <RestaurantList 
                     restaurants={restaurants.slice(0, 3)}
                     onEdit={handleEditRestaurant}
@@ -252,7 +251,7 @@ export default function StaffPage() {
                   {restaurants.length > 3 && (
                     <button
                       onClick={() => setActiveTab("restaurants")}
-                      className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+                      className="mt-3 sm:mt-4 text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base"
                     >
                       View all {restaurants.length} restaurants →
                     </button>
@@ -261,7 +260,6 @@ export default function StaffPage() {
               </>
             )}
             
-            {/* My Restaurants Tab */}
             {activeTab === "restaurants" && (
               <RestaurantList 
                 restaurants={restaurants}
@@ -272,34 +270,33 @@ export default function StaffPage() {
               />
             )}
             
-            {/* Customer Reviews Tab */}
             {activeTab === "reviews" && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex justify-between items-center mb-4">
+              <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">All Customer Reviews</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800">All Customer Reviews</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
                       Showing {reviews.length} review{reviews.length !== 1 ? 's' : ''} for your restaurants
                     </p>
                   </div>
                   <button
                     onClick={refreshData}
-                    className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm w-full sm:w-auto"
                   >
                     Refresh
                   </button>
                 </div>
                 
                 {reviews.length === 0 ? (
-                  <div className="text-center py-12">
-                    <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No reviews yet for your restaurants</p>
-                    <p className="text-sm text-gray-400 mt-2">
+                  <div className="text-center py-8 sm:py-12">
+                    <MessageSquare className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-sm sm:text-base">No reviews yet for your restaurants</p>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-2">
                       Once customers leave reviews, they will appear here
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {reviews.map((review, idx) => {
                       const restaurant = restaurants.find(r => r.id === review.restaurantId);
                       return (
@@ -320,7 +317,6 @@ export default function StaffPage() {
         </main>
       </div>
 
-      {/* Add/Edit Restaurant Modal */}
       {showAddModal && (
         <AddEditRestaurantModal 
           restaurant={editingRestaurant}
@@ -333,7 +329,6 @@ export default function StaffPage() {
         />
       )}
 
-      {/* Reviews Modal */}
       {showReviewsModal && selectedRestaurantId && (
         <ReviewsModal 
           restaurantId={selectedRestaurantId}
