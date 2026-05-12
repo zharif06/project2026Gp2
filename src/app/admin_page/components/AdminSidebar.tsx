@@ -5,16 +5,18 @@ import {
   Users, 
   Utensils, 
   MessageSquare,
-  TrendingUp
+  TrendingUp,
+  X
 } from "lucide-react";
 
 interface AdminSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   isOpen: boolean;
+  onClose?: () => void;
 }
 
-export default function AdminSidebar({ activeTab, onTabChange, isOpen }: AdminSidebarProps) {
+export default function AdminSidebar({ activeTab, onTabChange, isOpen, onClose }: AdminSidebarProps) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "orange" },
     { id: "analytics", label: "Analytics", icon: TrendingUp, color: "indigo" },
@@ -35,61 +37,46 @@ export default function AdminSidebar({ activeTab, onTabChange, isOpen }: AdminSi
     }
   };
 
-  // Mobile sidebar (overlay)
-  if (isOpen) {
+  // If this is mobile sidebar (with onClose function)
+  if (onClose) {
     return (
-      <>
-        {/* Overlay */}
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => onTabChange(activeTab)} // This should be a close function, but we'll handle differently
-        />
-        {/* Sidebar for mobile */}
-        <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 overflow-y-auto lg:relative lg:translate-x-0">
-          <div className="p-4 border-b border-gray-100 lg:hidden">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-xl">
-                  <LayoutDashboard className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-bold text-gray-800">Admin Menu</span>
-              </div>
-              <button 
-                onClick={() => onTabChange(activeTab)} 
-                className="p-2 rounded-lg hover:bg-gray-100"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          <nav className="mt-4">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onTabChange(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 ${
-                    isActive 
-                      ? getColorClasses(item.color, true) 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium text-sm">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+      <div className="h-full flex flex-col bg-white">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-800">Admin Menu</h2>
+          <button 
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-      </>
+        <nav className="flex-1 py-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onTabChange(item.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 ${
+                  isActive 
+                    ? "bg-orange-50 text-orange-600 border-r-4 border-orange-500" 
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium text-sm">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
     );
   }
 
-  // Desktop sidebar (collapsed)
+  // Desktop sidebar
   return (
-    <div className="hidden lg:block fixed left-0 top-16 w-64 bg-white shadow-lg h-[calc(100vh-4rem)] z-30 overflow-y-auto">
+    <aside className="fixed left-0 top-16 w-64 bg-white shadow-lg h-[calc(100vh-4rem)] overflow-y-auto">
       <nav className="mt-6">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -110,6 +97,6 @@ export default function AdminSidebar({ activeTab, onTabChange, isOpen }: AdminSi
           );
         })}
       </nav>
-    </div>
+    </aside>
   );
 }
