@@ -1,4 +1,3 @@
-// src/app/staff_page/components/DashboardStats.tsx
 "use client";
 
 import { TrendingUp, Utensils, Star, Clock, CheckCircle, RefreshCw, Plus } from "lucide-react";
@@ -57,22 +56,22 @@ export default function DashboardStats({ stats, onAddRestaurant, onRefresh }: Da
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Welcome Back! 👋</h1>
-          <p className="text-gray-500 mt-1">Here's an overview of your restaurant performance</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Welcome Back! 🍽️</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">Here's an overview of your restaurant performance</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
             onClick={onRefresh}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
             <RefreshCw className="w-4 h-4 text-gray-600" />
             <span className="text-gray-600">Refresh</span>
           </button>
           <button
             onClick={onAddRestaurant}
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all"
+            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all text-sm sm:text-base"
           >
             <Plus className="w-4 h-4" />
             Add Restaurant
@@ -80,7 +79,7 @@ export default function DashboardStats({ stats, onAddRestaurant, onRefresh }: Da
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
         {statCards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -88,24 +87,24 @@ export default function DashboardStats({ stats, onAddRestaurant, onRefresh }: Da
               key={index}
               className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
             >
-              <div className={`bg-gradient-to-r ${card.color} p-3`}>
+              <div className={`bg-gradient-to-r ${card.color} p-2 sm:p-3`}>
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-white/80 text-xs font-medium">Total</p>
-                    <p className="text-white text-base font-bold">{card.title}</p>
+                    <p className="text-white text-xs sm:text-sm font-bold">{card.title}</p>
                   </div>
-                  <div className="bg-white/20 rounded-lg p-1.5">
-                    <Icon className="w-4 h-4 text-white" />
+                  <div className="bg-white/20 rounded-lg p-1 sm:p-1.5">
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
                 </div>
               </div>
-              <div className="p-4 flex justify-between items-center">
+              <div className="p-3 sm:p-4 flex justify-between items-center">
                 <div>
-                  <span className="text-2xl font-bold text-gray-800">{card.value}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-gray-800">{card.value}</span>
                   <p className="text-xs text-gray-400 mt-1">{card.description}</p>
                 </div>
-                <div className={`${card.bgColor} rounded-full p-2`}>
-                  <Icon className={`w-4 h-4 ${card.textColor}`} />
+                <div className={`${card.bgColor} rounded-full p-1.5 sm:p-2`}>
+                  <Icon className={`w-3 h-3 sm:w-4 sm:h-4 ${card.textColor}`} />
                 </div>
               </div>
             </div>
@@ -113,13 +112,13 @@ export default function DashboardStats({ stats, onAddRestaurant, onRefresh }: Da
         })}
       </div>
 
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 mb-6 border border-blue-100">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-500 rounded-full p-2">
-            <TrendingUp className="w-4 h-4 text-white" />
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 border border-blue-100">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="bg-blue-500 rounded-full p-1.5 sm:p-2">
+            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-800">Quick Tip</p>
+            <p className="text-xs sm:text-sm font-semibold text-gray-800">Quick Tip</p>
             <p className="text-xs text-gray-600">Add high-quality photos and detailed descriptions to get more customers!</p>
           </div>
         </div>

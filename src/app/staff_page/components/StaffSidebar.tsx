@@ -16,8 +16,6 @@ interface StaffSidebarProps {
 }
 
 export default function StaffSidebar({ activeTab, onTabChange, isOpen, stats }: StaffSidebarProps) {
-  console.log("StaffSidebar stats:", stats); // Debug log
-
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "blue" },
     { id: "restaurants", label: "My Restaurants", icon: Utensils, color: "cyan" },
@@ -62,7 +60,7 @@ export default function StaffSidebar({ activeTab, onTabChange, isOpen, stats }: 
   }
 
   return (
-    <aside className="fixed left-0 top-16 w-64 bg-white shadow-lg min-h-screen z-30">
+    <aside className="fixed left-0 top-16 w-64 bg-white shadow-lg min-h-screen z-30 hidden lg:block">
       <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-cyan-50">
         <div className="flex items-center gap-2">
           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-1 rounded-lg">
@@ -90,7 +88,7 @@ export default function StaffSidebar({ activeTab, onTabChange, isOpen, stats }: 
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium text-sm">{item.label}</span>
               {item.id === "restaurants" && stats.totalRestaurants > 0 && (
                 <span className="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                   {stats.totalRestaurants}
