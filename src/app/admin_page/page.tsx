@@ -62,10 +62,9 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserType[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
 
-  // Close sidebar when clicking outside on mobile
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
@@ -177,25 +176,39 @@ export default function AdminPage() {
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      <div className="flex relative">
-        {/* Overlay for mobile when sidebar is open */}
-        {sidebarOpen && (
+      <div className="flex">
+        {/* Mobile sidebar overlay */}
+        <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarOpen ? 'visible' : 'invisible'}`}>
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className={`absolute inset-0 bg-black transition-opacity duration-300 ${sidebarOpen ? 'opacity-50' : 'opacity-0'}`}
             onClick={closeSidebar}
           />
-        )}
+          <div className={`absolute left-0 top-0 h-full w-64 bg-white shadow-xl transition-transform duration-300 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <AdminSidebar 
+              activeTab={activeTab} 
+              onTabChange={(tab) => {
+                setActiveTab(tab);
+                closeSidebar();
+              }}
+              isOpen={true}
+              onClose={closeSidebar}
+            />
+          </div>
+        </div>
+
+        {/* Desktop sidebar - always visible */}
+        <div className="hidden lg:block">
+          <AdminSidebar 
+            activeTab={activeTab} 
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              closeSidebar();
+            }}
+            isOpen={true}
+          />
+        </div>
         
-        <AdminSidebar 
-          activeTab={activeTab} 
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            setSidebarOpen(false); // Close sidebar after clicking on mobile
-          }}
-          isOpen={sidebarOpen}
-        />
-        
-        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 w-full ${sidebarOpen ? 'overflow-hidden' : ''}`}>
+        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
           <div className="max-w-7xl mx-auto">
             {activeTab === "dashboard" && (
               <DashboardStats 
