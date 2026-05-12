@@ -62,8 +62,13 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserType[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
   const router = useRouter();
+
+  // Close sidebar when clicking outside on mobile
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -157,7 +162,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-orange-500 mx-auto"></div>
           <p className="mt-4 text-gray-600 font-medium">Loading Dashboard...</p>
         </div>
       </div>
@@ -172,14 +177,25 @@ export default function AdminPage() {
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      <div className="flex">
+      <div className="flex relative">
+        {/* Overlay for mobile when sidebar is open */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={closeSidebar}
+          />
+        )}
+        
         <AdminSidebar 
           activeTab={activeTab} 
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setSidebarOpen(false); // Close sidebar after clicking on mobile
+          }}
           isOpen={sidebarOpen}
         />
         
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'} p-6`}>
+        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 w-full ${sidebarOpen ? 'overflow-hidden' : ''}`}>
           <div className="max-w-7xl mx-auto">
             {activeTab === "dashboard" && (
               <DashboardStats 
@@ -188,7 +204,6 @@ export default function AdminPage() {
               />
             )}
             
-            {/* Analytics Tab - ADD THIS */}
             {activeTab === "analytics" && (
               <AnalyticsDashboard onRefresh={refreshData} />
             )}
