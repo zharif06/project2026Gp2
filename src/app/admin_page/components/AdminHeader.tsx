@@ -6,7 +6,7 @@ import { useState } from "react";
 interface AdminHeaderProps {
   user: any;
   onLogout: () => void;
-  onToggleSidebar?: () => void;
+  onToggleSidebar: () => void;
 }
 
 export default function AdminHeader({ user, onLogout, onToggleSidebar }: AdminHeaderProps) {
@@ -17,9 +17,10 @@ export default function AdminHeader({ user, onLogout, onToggleSidebar }: AdminHe
       <div className="px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex justify-between items-center py-2 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Menu button - visible on ALL screens */}
             <button
               onClick={onToggleSidebar}
-              className="p-2 rounded-lg hover:bg-gray-100 lg:hidden min-h-[44px] min-w-[44px]"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px]"
             >
               <Menu className="w-5 h-5 text-gray-600" />
             </button>
@@ -27,7 +28,7 @@ export default function AdminHeader({ user, onLogout, onToggleSidebar }: AdminHe
               <div className="bg-gradient-to-r from-orange-500 to-red-500 p-1.5 sm:p-2 rounded-xl">
                 <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                   Admin Panel
                 </h1>
@@ -37,7 +38,6 @@ export default function AdminHeader({ user, onLogout, onToggleSidebar }: AdminHe
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Notification Bell */}
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
