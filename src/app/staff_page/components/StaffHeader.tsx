@@ -20,7 +20,7 @@ export default function StaffHeader({ user, onLogout, onToggleSidebar }: StaffHe
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onToggleSidebar}
-              className="p-2 rounded-lg hover:bg-gray-100 lg:hidden min-h-[44px] min-w-[44px]"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px]"
             >
               <Menu className="w-5 h-5 text-gray-600" />
             </button>
@@ -38,7 +38,6 @@ export default function StaffHeader({ user, onLogout, onToggleSidebar }: StaffHe
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Notification Bell */}
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -60,7 +59,6 @@ export default function StaffHeader({ user, onLogout, onToggleSidebar }: StaffHe
               )}
             </div>
 
-            {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
