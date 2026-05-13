@@ -20,9 +20,10 @@ interface DashboardStatsProps {
     averageRating: string;
   };
   onRefresh: () => void;
+  onNavigate: (tab: string) => void;  // Add this prop
 }
 
-export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps) {
+export default function DashboardStats({ stats, onRefresh, onNavigate }: DashboardStatsProps) {
   const statCards = [
     {
       title: "Total Restaurants",
@@ -30,7 +31,7 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
       icon: Utensils,
       color: "from-orange-500 to-red-500",
       bgColor: "bg-orange-100",
-      textColor: "text-orange-600"
+      textColor: "text-orange-600",
     },
     {
       title: "Pending Approval",
@@ -38,7 +39,7 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
       icon: Clock,
       color: "from-yellow-500 to-orange-500",
       bgColor: "bg-yellow-100",
-      textColor: "text-yellow-600"
+      textColor: "text-yellow-600",
     },
     {
       title: "Approved",
@@ -46,7 +47,7 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
       icon: CheckCircle,
       color: "from-green-500 to-emerald-500",
       bgColor: "bg-green-100",
-      textColor: "text-green-600"
+      textColor: "text-green-600",
     },
     {
       title: "Total Users",
@@ -54,7 +55,7 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
       icon: Users,
       color: "from-blue-500 to-indigo-500",
       bgColor: "bg-blue-100",
-      textColor: "text-blue-600"
+      textColor: "text-blue-600",
     },
     {
       title: "Total Reviews",
@@ -62,7 +63,7 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
       icon: Star,
       color: "from-purple-500 to-pink-500",
       bgColor: "bg-purple-100",
-      textColor: "text-purple-600"
+      textColor: "text-purple-600",
     },
     {
       title: "Average Rating",
@@ -70,8 +71,8 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
       icon: TrendingUp,
       color: "from-teal-500 to-cyan-500",
       bgColor: "bg-teal-100",
-      textColor: "text-teal-600"
-    }
+      textColor: "text-teal-600",
+    },
   ];
 
   return (
@@ -120,23 +121,35 @@ export default function DashboardStats({ stats, onRefresh }: DashboardStatsProps
         })}
       </div>
 
-      {/* Quick Actions - Mobile Responsive */}
-      <div className="mt-6 sm:mt-8 bg-white rounded-2xl shadow-lg p-4 sm:p-6 overflow-x-auto">
+      {/* Quick Actions - with working navigation */}
+      <div className="mt-6 sm:mt-8 bg-white rounded-2xl shadow-lg p-4 sm:p-6">
         <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-          <button className="p-2 sm:p-4 bg-orange-50 rounded-xl text-center hover:bg-orange-100 transition-colors">
+          <button 
+            onClick={() => onNavigate("restaurants")}
+            className="p-2 sm:p-4 bg-orange-50 rounded-xl text-center hover:bg-orange-100 transition-colors"
+          >
             <Utensils className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 mx-auto mb-1 sm:mb-2" />
             <p className="text-xs sm:text-sm font-medium text-gray-700">Add Restaurant</p>
           </button>
-          <button className="p-2 sm:p-4 bg-blue-50 rounded-xl text-center hover:bg-blue-100 transition-colors">
+          <button 
+            onClick={() => onNavigate("users")}
+            className="p-2 sm:p-4 bg-blue-50 rounded-xl text-center hover:bg-blue-100 transition-colors"
+          >
             <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 mx-auto mb-1 sm:mb-2" />
             <p className="text-xs sm:text-sm font-medium text-gray-700">Add Staff</p>
           </button>
-          <button className="p-2 sm:p-4 bg-green-50 rounded-xl text-center hover:bg-green-100 transition-colors">
+          <button 
+            onClick={() => onNavigate("restaurants")}
+            className="p-2 sm:p-4 bg-green-50 rounded-xl text-center hover:bg-green-100 transition-colors"
+          >
             <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 mx-auto mb-1 sm:mb-2" />
             <p className="text-xs sm:text-sm font-medium text-gray-700">Approve Pending</p>
           </button>
-          <button className="p-2 sm:p-4 bg-purple-50 rounded-xl text-center hover:bg-purple-100 transition-colors">
+          <button 
+            onClick={() => onNavigate("reviews")}
+            className="p-2 sm:p-4 bg-purple-50 rounded-xl text-center hover:bg-purple-100 transition-colors"
+          >
             <Star className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 mx-auto mb-1 sm:mb-2" />
             <p className="text-xs sm:text-sm font-medium text-gray-700">Manage Reviews</p>
           </button>
