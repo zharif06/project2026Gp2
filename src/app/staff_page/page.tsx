@@ -88,6 +88,10 @@ export default function StaffPage() {
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const router = useRouter();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
@@ -220,10 +224,23 @@ export default function StaffPage() {
       <StaffHeader 
         user={user} 
         onLogout={() => auth.signOut().then(() => router.push("/login_page"))}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleSidebar={toggleSidebar}
       />
       
       <div className="flex">
+        {/* Desktop sidebar - always visible but can be hidden */}
+        <div className="hidden lg:block">
+          <StaffSidebar 
+            activeTab={activeTab} 
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              closeSidebar();
+            }}
+            isOpen={sidebarOpen}
+            stats={getStats()}
+          />
+        </div>
+
         {/* Mobile sidebar overlay */}
         <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarOpen ? 'visible' : 'invisible'}`}>
           <div 
@@ -243,21 +260,9 @@ export default function StaffPage() {
             />
           </div>
         </div>
-
-        {/* Desktop sidebar - always visible */}
-        <div className="hidden lg:block">
-          <StaffSidebar 
-            activeTab={activeTab} 
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              closeSidebar();
-            }}
-            isOpen={true}
-            stats={getStats()}
-          />
-        </div>
         
-        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
+        {/* Main content - margin left on desktop when sidebar is open */}
+        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
           <div className="max-w-7xl mx-auto">
             {activeTab === "dashboard" && (
               <>
