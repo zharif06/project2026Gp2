@@ -65,6 +65,10 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
@@ -173,11 +177,24 @@ export default function AdminPage() {
       <AdminHeader 
         user={user} 
         onLogout={() => auth.signOut().then(() => router.push("/login_page"))}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleSidebar={toggleSidebar}
       />
       
       <div className="flex">
-        {/* Mobile sidebar overlay */}
+        {/* DESKTOP SIDEBAR - boleh tutup/buka dengan button */}
+        <div className="hidden lg:block">
+          <AdminSidebar 
+            activeTab={activeTab} 
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              closeSidebar();
+            }}
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+          />
+        </div>
+
+        {/* MOBILE SIDEBAR OVERLAY */}
         <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarOpen ? 'visible' : 'invisible'}`}>
           <div 
             className={`absolute inset-0 bg-black transition-opacity duration-300 ${sidebarOpen ? 'opacity-50' : 'opacity-0'}`}
@@ -195,25 +212,15 @@ export default function AdminPage() {
             />
           </div>
         </div>
-
-        {/* Desktop sidebar - always visible */}
-        <div className="hidden lg:block">
-          <AdminSidebar 
-            activeTab={activeTab} 
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              closeSidebar();
-            }}
-            isOpen={true}
-          />
-        </div>
         
-        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
+        {/* MAIN CONTENT - margin kiri bergantung pada sidebarOpen */}
+        <main className={`flex-1 transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
           <div className="max-w-7xl mx-auto">
             {activeTab === "dashboard" && (
               <DashboardStats 
                 stats={getStats()} 
                 onRefresh={refreshData}
+                onNavigate={(tab: string) => setActiveTab(tab)}
               />
             )}
             
