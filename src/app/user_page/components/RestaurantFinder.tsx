@@ -15,7 +15,8 @@ import {
   Bookmark,
   X,
   Clock,
-  Calendar
+  Calendar,
+  ChefHat
 } from "lucide-react";
 import { PageType } from "../page";
 
@@ -38,7 +39,16 @@ type Restaurant = {
   totalReviews: number;
   status: string;
   submittedAt: string;
+  menu?: MenuItem[];
+  menuMinPrice?: number;
+  menuMaxPrice?: number;
 };
+
+interface MenuItem {
+  name: string;
+  price: number;
+  category: string;
+}
 
 interface RestaurantFinderProps {
   setCurrentPage: (page: PageType) => void;
@@ -46,6 +56,13 @@ interface RestaurantFinderProps {
 }
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const budgetOptions = [
+  { label: "Any", value: "any", min: 0, max: 9999 },
+  { label: "Budget (Under RM 10)", value: "budget", min: 0, max: 10 },
+  { label: "Mid (RM 10 - RM 30)", value: "mid", min: 10, max: 30 },
+  { label: "Premium (RM 30 - RM 60)", value: "premium", min: 30, max: 60 },
+  { label: "Luxury (RM 60+)", value: "luxury", min: 60, max: 9999 },
+];
 
 export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant }: RestaurantFinderProps) {
   const [user, setUser] = useState<any>(null);
@@ -54,6 +71,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
   const [selectedPrice, setSelectedPrice] = useState("All");
+  const [selectedBudget, setSelectedBudget] = useState("any");
   const [selectedRating, setSelectedRating] = useState("All");
   const [selectedState, setSelectedState] = useState("All");
   const [selectedArea, setSelectedArea] = useState("");
@@ -79,8 +97,10 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     { value: "price_low", label: "Price: Low to High" },
     { value: "price_high", label: "Price: High to Low" },
     { value: "newest", label: "Newest First" },
-    { value: "distance", label: "Nearest First" }
+    { value: "distance", label: "Nearest First" },
+    { value: "menu_price_low", label: "Menu Price: Low to High" }
   ];
+  
   const distanceOptions = [
     { value: 0, label: "Any Distance" },
     { value: 1, label: "Within 1 km" },
@@ -110,7 +130,12 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
         restaurantsData.push({ 
           id: doc.id, 
           ...data,
-          openingDays: data.openingDays || []
+          openingDays: data.openingDays || [],
+          rating: data.rating || 0,
+          totalReviews: data.totalReviews || 0,
+          menu: data.menu || [],
+          menuMinPrice: data.menuMinPrice || 0,
+          menuMaxPrice: data.menuMaxPrice || 0
         } as Restaurant);
       });
       setRestaurants(restaurantsData);
@@ -224,76 +249,51 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     return R * c;
   };
 
-  // FIXED: Improved isRestaurantOpen function that handles 24-hour format
   const isRestaurantOpen = (hours: string) => {
     if (!hours) return false;
-    
     const hoursLower = hours.toLowerCase().trim();
-    
-    // Handle 24 hours / 24hrs / 24/7
-    if (hoursLower === "24 hours" || 
-        hoursLower === "24hrs" || 
-        hoursLower === "24/7" ||
-        hoursLower.includes("24 hour")) {
+    if (hoursLower === "24 hours" || hoursLower === "24hrs" || hoursLower === "24/7" || hoursLower.includes("24 hour")) {
       return true;
     }
-    
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    // Parse time string (supports "9:00 AM", "10PM", "14:30", "02:00 AM")
     const parseTime = (timeStr: string): { hour: number; minute: number } | null => {
       const trimmed = timeStr.trim().toUpperCase();
-      
-      // 24-hour format (e.g., "14:30" or "22:00")
       const hour24Match = trimmed.match(/^(\d{1,2})(?::(\d{2}))?$/);
       if (hour24Match) {
         let hour = parseInt(hour24Match[1]);
         const minute = hour24Match[2] ? parseInt(hour24Match[2]) : 0;
-        if (hour >= 0 && hour <= 23) {
-          return { hour, minute };
-        }
+        if (hour >= 0 && hour <= 23) return { hour, minute };
       }
-      
-      // 12-hour format with AM/PM (e.g., "9:00 AM", "10PM")
       const ampmMatch = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
       if (ampmMatch) {
         let hour = parseInt(ampmMatch[1]);
         const minute = ampmMatch[2] ? parseInt(ampmMatch[2]) : 0;
         const isPM = ampmMatch[3] === "PM";
-        
         if (isPM && hour !== 12) hour += 12;
         if (!isPM && hour === 12) hour = 0;
-        
-        if (hour >= 0 && hour <= 23) {
-          return { hour, minute };
-        }
+        if (hour >= 0 && hour <= 23) return { hour, minute };
       }
-      
       return null;
     };
     
-    // Split by dash
     const parts = hours.split('-');
     if (parts.length !== 2) return false;
-    
     const openTime = parseTime(parts[0]);
     const closeTime = parseTime(parts[1]);
-    
     if (!openTime || !closeTime) return false;
     
     const currentTotalMinutes = currentHour * 60 + currentMinute;
     const openTotalMinutes = openTime.hour * 60 + openTime.minute;
     let closeTotalMinutes = closeTime.hour * 60 + closeTime.minute;
     
-    // Handle overnight hours (e.g., 10PM - 2AM)
     if (closeTotalMinutes < openTotalMinutes) {
       closeTotalMinutes += 24 * 60;
       const adjustedCurrent = currentTotalMinutes < openTotalMinutes ? currentTotalMinutes + 24 * 60 : currentTotalMinutes;
       return adjustedCurrent >= openTotalMinutes && adjustedCurrent < closeTotalMinutes;
     }
-    
     return currentTotalMinutes >= openTotalMinutes && currentTotalMinutes < closeTotalMinutes;
   };
 
@@ -320,6 +320,19 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
       filtered = filtered.filter(r => r.priceRange === selectedPrice);
     }
 
+    // NEW: Filter by menu price range
+    if (selectedBudget !== "any") {
+      const budget = budgetOptions.find(b => b.value === selectedBudget);
+      if (budget) {
+        filtered = filtered.filter(r => {
+          const minPrice = r.menuMinPrice || 0;
+          const maxPrice = r.menuMaxPrice || 9999;
+          // Restaurant is included if its price range overlaps with selected budget
+          return (minPrice <= budget.max && maxPrice >= budget.min);
+        });
+      }
+    }
+
     if (selectedRating !== "All") {
       const minRating = parseInt(selectedRating);
       filtered = filtered.filter(r => (r.rating || 0) >= minRating);
@@ -340,7 +353,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
       filtered = filtered.filter(r => isOpenOnDay(r.openingDays, selectedDay));
     }
 
-    // FIXED: "Open Now" filter now properly handles 24-hour restaurants
     if (openNow) {
       filtered = filtered.filter(r => isRestaurantOpen(r.hours));
     }
@@ -375,6 +387,10 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
           return 4;
         };
         return getPriceValue(b.priceRange) - getPriceValue(a.priceRange);
+      } else if (sortBy === "menu_price_low") {
+        const aMin = a.menuMinPrice || 9999;
+        const bMin = b.menuMinPrice || 9999;
+        return aMin - bMin;
       } else if (sortBy === "newest") {
         return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
       } else if (sortBy === "distance" && userLocation) {
@@ -390,12 +406,13 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, selectedCuisine, selectedPrice, selectedRating, selectedState, selectedArea, selectedDay, sortBy, distanceFilter, openNow, userLocation, restaurants]);
+  }, [searchTerm, selectedCuisine, selectedPrice, selectedBudget, selectedRating, selectedState, selectedArea, selectedDay, sortBy, distanceFilter, openNow, userLocation, restaurants]);
 
   const clearAllFilters = () => {
     setSearchTerm("");
     setSelectedCuisine("All");
     setSelectedPrice("All");
+    setSelectedBudget("any");
     setSelectedRating("All");
     setSelectedState("All");
     setSelectedArea("");
@@ -408,6 +425,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
   const hasActiveFilters = searchTerm !== "" || 
     selectedCuisine !== "All" || 
     selectedPrice !== "All" || 
+    selectedBudget !== "any" ||
     selectedRating !== "All" || 
     selectedState !== "All" || 
     selectedArea !== "" || 
@@ -416,8 +434,19 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     openNow;
 
   const getAverageRating = (restaurant: Restaurant) => {
-    if (!restaurant.rating || restaurant.rating === 0) return "New";
-    return restaurant.rating.toFixed(1);
+    const rating = restaurant.rating || 0;
+    const totalReviews = restaurant.totalReviews || 0;
+    if (totalReviews === 0 || rating === 0) return "New";
+    return `${rating.toFixed(1)} (${totalReviews})`;
+  };
+
+  const getPriceRangeFromMenu = (restaurant: Restaurant) => {
+    const minPrice = restaurant.menuMinPrice;
+    const maxPrice = restaurant.menuMaxPrice;
+    if (minPrice && maxPrice && minPrice > 0 && maxPrice > 0) {
+      return `RM ${minPrice} - RM ${maxPrice}`;
+    }
+    return null;
   };
 
   const getOpeningDaysDisplay = (openingDays: string[]) => {
@@ -436,8 +465,8 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
 
   return (
     <div className="text-gray-900">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Find Restaurants</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold">Find Restaurants</h1>
         <button
           onClick={getCurrentLocation}
           disabled={locationLoading}
@@ -527,6 +556,23 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                 >
                   {priceRanges.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              {/* NEW: Menu Price Budget Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <ChefHat className="w-4 h-4 inline mr-1" />
+                  Budget (per item)
+                </label>
+                <select
+                  value={selectedBudget}
+                  onChange={(e) => setSelectedBudget(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+                >
+                  {budgetOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -654,7 +700,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRestaurants.map((restaurant, idx) => (
+          {filteredRestaurants.map((restaurant) => (
             <div
               key={restaurant.id}
               onClick={() => { setSelectedRestaurant(restaurant); setCurrentPage("restaurantDetails"); }}
@@ -691,6 +737,13 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
                   <MapPin className="w-3 h-3" />
                   <span className="truncate">{restaurant.address}</span>
                 </div>
+                {/* NEW: Display menu price range if available */}
+                {getPriceRangeFromMenu(restaurant) && (
+                  <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
+                    <ChefHat className="w-3 h-3" />
+                    <span>Menu: {getPriceRangeFromMenu(restaurant)}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
                   <Calendar className="w-3 h-3" />
                   <span>Open: {getOpeningDaysDisplay(restaurant.openingDays)}</span>
