@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,7 @@ export default function UserPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [refreshRestaurantsTrigger, setRefreshRestaurantsTrigger] = useState(0);
   const router = useRouter();
 
   const toggleSidebar = () => {
@@ -58,6 +59,11 @@ export default function UserPage() {
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
+
+  // Callback for when a review is submitted - refreshes restaurant data
+  const onReviewSubmitted = useCallback(() => {
+    setRefreshRestaurantsTrigger(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -101,9 +107,17 @@ export default function UserPage() {
       case "contact":
         return <ContactUs />;
       case "restaurants":
-        return <RestaurantFinder setCurrentPage={handleSetCurrentPage} setSelectedRestaurant={setSelectedRestaurant} />;
+        return <RestaurantFinder 
+          key={refreshRestaurantsTrigger}
+          setCurrentPage={handleSetCurrentPage} 
+          setSelectedRestaurant={setSelectedRestaurant} 
+        />;
       case "restaurantDetails":
-        return <RestaurantDetails restaurant={selectedRestaurant} setCurrentPage={handleSetCurrentPage} />;
+        return <RestaurantDetails 
+          restaurant={selectedRestaurant} 
+          setCurrentPage={handleSetCurrentPage}
+          onReviewSubmitted={onReviewSubmitted}
+        />;
       case "reviews":
         return <Reviews />;
       default:
@@ -252,71 +266,71 @@ export default function UserPage() {
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50'}`}>
       {/* Header */}
       <header className={`sticky top-0 z-50 shadow-lg transition-colors duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white/90 backdrop-blur-md'}`}>
-  <div className="w-full px-2 sm:px-4 md:px-6">
-    <div className="flex justify-between items-center py-2 sm:py-3">
-      {/* LEFT SECTION - Logo dan Menu */}
-      <div className="flex items-center gap-1 sm:gap-3">
-        <button
-          onClick={toggleSidebar}
-          className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[40px] min-w-[40px]"
-        >
-          <Menu className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
-        </button>
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-full blur-lg opacity-70"></div>
-          <Utensils className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 relative z-10" />
-        </div>
-        <div className="hidden sm:block">
-          <h1 className="text-sm sm:text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-            MakanBajet
-          </h1>
-          <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Food Discovery Platform</p>
-        </div>
-        {/* Mobile logo text */}
-        <div className="sm:hidden">
-          <h1 className="text-sm font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-            MakanBajet
-          </h1>
-        </div>
-      </div>
+        <div className="w-full px-2 sm:px-4 md:px-6">
+          <div className="flex justify-between items-center py-2 sm:py-3">
+            {/* LEFT SECTION - Logo dan Menu */}
+            <div className="flex items-center gap-1 sm:gap-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[40px] min-w-[40px]"
+              >
+                <Menu className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+              </button>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-full blur-lg opacity-70"></div>
+                <Utensils className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 relative z-10" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-sm sm:text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  MakanBajet
+                </h1>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Food Discovery Platform</p>
+              </div>
+              {/* Mobile logo text */}
+              <div className="sm:hidden">
+                <h1 className="text-sm font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  MakanBajet
+                </h1>
+              </div>
+            </div>
 
-      {/* RIGHT SECTION - User menu */}
-      <div className="flex items-center gap-1 sm:gap-2">
-        {/* Dark mode toggle */}
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className={`p-1.5 sm:p-2 rounded-full transition-colors ${isDarkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
-        >
-          {isDarkMode ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-        </button>
+            {/* RIGHT SECTION - User menu */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Dark mode toggle */}
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`p-1.5 sm:p-2 rounded-full transition-colors ${isDarkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
+              >
+                {isDarkMode ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+              </button>
 
-        {/* User info - hidden on mobile */}
-        <div className="hidden sm:block text-right">
-          <p className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            {user?.email?.split('@')[0]}
-          </p>
-          <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Food Lover</p>
+              {/* User info - hidden on mobile */}
+              <div className="hidden sm:block text-right">
+                <p className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {user?.email?.split('@')[0]}
+                </p>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Food Lover</p>
+              </div>
+
+              {/* Avatar */}
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xs sm:text-sm">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+
+              {/* Sign Out button */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-xs sm:text-sm"
+              >
+                <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* Avatar */}
-        <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-          <span className="text-white font-bold text-xs sm:text-sm">
-            {user?.email?.charAt(0).toUpperCase()}
-          </span>
-        </div>
-
-        {/* Sign Out button */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-xs sm:text-sm"
-        >
-          <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Sign Out</span>
-        </button>
-      </div>
-    </div>
-  </div>
-</header>
+      </header>
 
       <div className="flex relative">
         {/* DESKTOP SIDEBAR */}
