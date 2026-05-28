@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { ArrowLeft, Star, MapPin, DollarSign, Clock, Phone, Navigation, Heart, Bookmark, Send, X, Globe, Lightbulb, Calendar } from "lucide-react";
+import { ArrowLeft, Star, MapPin, DollarSign, Clock, Phone, Navigation, Heart, Bookmark, Send, X, Globe, Lightbulb, Calendar, ChefHat } from "lucide-react";
 import { PageType } from "../page";
 
 interface RestaurantDetailsProps {
   restaurant: any;
   setCurrentPage: (page: PageType) => void;
+  onReviewSubmitted?: () => void;
 }
 
 interface Review {
@@ -23,9 +24,15 @@ interface Review {
   date: string;
 }
 
+interface MenuItem {
+  name: string;
+  price: number;
+  category: string;
+}
+
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-export default function RestaurantDetails({ restaurant, setCurrentPage }: RestaurantDetailsProps) {
+export default function RestaurantDetails({ restaurant, setCurrentPage, onReviewSubmitted }: RestaurantDetailsProps) {
   const [user, setUser] = useState<any>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [userRating, setUserRating] = useState(0);
@@ -35,17 +42,7 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
   const [message, setMessage] = useState("");
   const [isLoved, setIsLoved] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        setUser(user);
-        await fetchReviews();
-        await checkUserInteractions(user.uid);
-      }
-    });
-    return () => unsubscribe();
-  }, [restaurant?.id]);
+  const [activeMenuCategory, setActiveMenuCategory] = useState<string>("all");
 
   const fetchReviews = async () => {
     if (!restaurant?.id) return;
@@ -73,6 +70,17 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
       console.error("Error fetching reviews:", error);
     }
   };
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setUser(user);
+        await fetchReviews();
+        await checkUserInteractions(user.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, [restaurant?.id]);
 
   const checkUserInteractions = async (userId: string) => {
     if (!restaurant?.id) return;
@@ -173,38 +181,43 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
         userName: user.displayName || user.email?.split('@')[0] || "User",
         rating: userRating,
         comment: userReview,
-        suggestion: userSuggestion,
+        suggestion: userSuggestion || "",
         date: new Date().toISOString().split('T')[0],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        timestamp: Date.now()
       };
 
-      const docRef = await addDoc(collection(db, "reviews"), reviewData);
+      await addDoc(collection(db, "reviews"), reviewData);
       
-      const newReview: Review = {
-        id: docRef.id,
-        ...reviewData
-      };
+      await fetchReviews();
       
-      setReviews(prevReviews => [newReview, ...prevReviews]);
-      
-      const allRatings = [...reviews.map(r => r.rating), userRating];
-      const totalRating = allRatings.reduce((sum, r) => sum + r, 0);
-      const avgRating = totalRating / allRatings.length;
+      const reviewsSnapshot = await getDocs(query(collection(db, "reviews"), where("restaurantId", "==", restaurant.id)));
+      const allReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+      const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+      const avgRating = totalRating / allReviews.length;
       
       await updateDoc(doc(db, "restaurants", restaurant.id), {
         rating: avgRating,
-        totalReviews: allRatings.length
+        totalReviews: allReviews.length
       });
+      
+      restaurant.rating = avgRating;
+      restaurant.totalReviews = allReviews.length;
       
       setUserRating(0);
       setUserReview("");
       setUserSuggestion("");
       setMessage("✅ Review submitted successfully!");
       
+      if (onReviewSubmitted) {
+        onReviewSubmitted();
+      }
+      
       setTimeout(() => setMessage(""), 3000);
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error("Error submitting review:", error);
-      setMessage("❌ Failed to submit review");
+      setMessage(`❌ ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -214,20 +227,40 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
     if (restaurant.direction) {
       window.open(restaurant.direction, '_blank');
     } else if (restaurant.location?.lat && restaurant.location?.lng) {
-      window.open(`https://maps.google.com/?q=${restaurant.location.lat},${restaurant.location.lng}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${restaurant.location.lat},${restaurant.location.lng}`, '_blank');
     }
   };
 
   if (!restaurant) return <div className="text-gray-900">No restaurant selected</div>;
 
-  const averageRating = reviews.length > 0 
+  const totalReviewsCount = reviews.length || restaurant.totalReviews || 0;
+  const avgRatingValue = reviews.length > 0 
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : restaurant.rating?.toFixed(1) || "New";
+    : restaurant.rating?.toFixed(1) || "0";
 
-  // Get today's open status
+  const displayRating = totalReviewsCount === 0 || avgRatingValue === "0" 
+    ? "New" 
+    : `${avgRatingValue} (${totalReviewsCount} review${totalReviewsCount !== 1 ? 's' : ''})`;
+
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const isOpenToday = restaurant.openingDays?.includes(today);
   const openingDaysList = restaurant.openingDays || [];
+
+  // Menu data
+  const menuItems: MenuItem[] = restaurant.menu || [];
+  const menuCategories = ["all", ...new Set(menuItems.map(item => item.category).filter(Boolean))];
+  const filteredMenu = activeMenuCategory === "all" 
+    ? menuItems 
+    : menuItems.filter(item => item.category === activeMenuCategory);
+  const totalMenuItems = menuItems.length;
+  const menuPrices = menuItems.filter(item => item.price > 0).map(item => item.price);
+  const menuMinPrice = menuPrices.length > 0 ? Math.min(...menuPrices) : null;
+  const menuMaxPrice = menuPrices.length > 0 ? Math.max(...menuPrices) : null;
+
+  // Google Maps embed URL (free, no API key - using OpenStreetMap)
+  const mapEmbedUrl = restaurant.location?.lat && restaurant.location?.lng 
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${restaurant.location.lng - 0.01},${restaurant.location.lat - 0.01},${restaurant.location.lng + 0.01},${restaurant.location.lat + 0.01}&layer=mapnik&marker=${restaurant.location.lat},${restaurant.location.lng}`
+    : null;
 
   return (
     <div className="text-gray-900">
@@ -240,7 +273,7 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
       </button>
 
       {message && (
-        <div className={`mb-4 p-3 rounded-lg ${message.includes("✅") || message.includes("❤️") || message.includes("🔖") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+        <div className={`mb-4 p-3 rounded-lg ${message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
           {message}
         </div>
       )}
@@ -257,12 +290,18 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{restaurant.name}</h1>
-            <div className="flex items-center gap-2 text-white">
+            <div className="flex flex-wrap items-center gap-2 text-white">
               <Star className="w-5 h-5 text-yellow-500 fill-current" />
-              <span>{averageRating}</span>
-              <span className="text-white/70">({reviews.length} reviews)</span>
+              <span>{displayRating}</span>
               <span className="mx-2">•</span>
               <span>{restaurant.cuisine}</span>
+              {menuMinPrice && menuMaxPrice && (
+                <>
+                  <span className="mx-2">•</span>
+                  <ChefHat className="w-5 h-5" />
+                  <span>RM {menuMinPrice} - RM {menuMaxPrice}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="absolute top-4 right-4 flex gap-2">
@@ -283,6 +322,65 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
                 <p className="text-gray-700 leading-relaxed">{restaurant.description || "No description available."}</p>
               </div>
 
+              {/* Menu Section */}
+              {menuItems.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <ChefHat className="w-5 h-5 text-orange-500" />
+                    Menu & Pricing
+                  </h2>
+                  
+                  {menuCategories.length > 2 && (
+                    <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto pb-2">
+                      {menuCategories.map(category => (
+                        <button
+                          key={category}
+                          onClick={() => setActiveMenuCategory(category)}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                            activeMenuCategory === category
+                              ? "bg-orange-500 text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {category === "all" ? "All Items" : category}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {filteredMenu.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-3 border-b border-gray-100">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">{item.name}</p>
+                          {item.category && item.category !== "Other" && (
+                            <p className="text-xs text-gray-400">{item.category}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-green-600">
+  {item.price && item.price > 0 ? `RM ${item.price.toFixed(2)}` : "Price not set"}
+</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {filteredMenu.length === 0 && (
+                    <p className="text-gray-500 text-center py-4">No menu items in this category.</p>
+                  )}
+                  
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      📋 Total {totalMenuItems} menu item{totalMenuItems !== 1 ? 's' : ''}
+                      {menuMinPrice && menuMaxPrice && (
+                        <> • Price range: <strong>RM {menuMinPrice} - RM {menuMaxPrice}</strong></>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-3">Location & Hours</h2>
                 <div className="space-y-3">
@@ -295,11 +393,38 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
                       </button>
                     </div>
                   </div>
+                  
+                  {/* Google Maps / OpenStreetMap Embed */}
+                  {mapEmbedUrl && (
+                    <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
+                      <iframe
+                        width="100%"
+                        height="200"
+                        frameBorder="0"
+                        style={{ border: 0 }}
+                        src={mapEmbedUrl}
+                        title="Restaurant location on map"
+                        className="w-full"
+                        loading="lazy"
+                      ></iframe>
+                      <div className="p-2 text-center bg-gray-50 text-xs text-gray-500">
+                        <a 
+                          href={`https://www.openstreetmap.org/?mlat=${restaurant.location.lat}&mlon=${restaurant.location.lng}#map=15/${restaurant.location.lat}/${restaurant.location.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          View on OpenStreetMap ↗
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5 text-blue-600" />
                     <span className="text-gray-700">{restaurant.hours || "Not specified"}</span>
                   </div>
-                  {/* NEW: Opening Days Display */}
+                  
                   <div className="flex items-start gap-3">
                     <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
                     <div>
@@ -332,10 +457,12 @@ export default function RestaurantDetails({ restaurant, setCurrentPage }: Restau
                       )}
                     </div>
                   </div>
+                  
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-blue-600" />
                     <span className="text-gray-700">{restaurant.phone || "Not available"}</span>
                   </div>
+                  
                   {restaurant.website && (
                     <div className="flex items-center gap-3">
                       <Globe className="w-5 h-5 text-blue-600" />
