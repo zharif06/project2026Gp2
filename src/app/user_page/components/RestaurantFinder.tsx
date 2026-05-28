@@ -56,12 +56,14 @@ interface RestaurantFinderProps {
 }
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+// Budget options based on menu price
 const budgetOptions = [
-  { label: "Any", value: "any", min: 0, max: 9999 },
-  { label: "Budget (Under RM 10)", value: "budget", min: 0, max: 10 },
-  { label: "Mid (RM 10 - RM 30)", value: "mid", min: 10, max: 30 },
-  { label: "Premium (RM 30 - RM 60)", value: "premium", min: 30, max: 60 },
-  { label: "Luxury (RM 60+)", value: "luxury", min: 60, max: 9999 },
+  { value: "any", label: "Any Price", min: 0, max: 9999 },
+  { value: "under10", label: "Under RM 10", min: 0, max: 10 },
+  { value: "10to30", label: "RM 10 - RM 30", min: 10, max: 30 },
+  { value: "30to60", label: "RM 30 - RM 60", min: 30, max: 60 },
+  { value: "above60", label: "Above RM 60", min: 60, max: 9999 },
 ];
 
 export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant }: RestaurantFinderProps) {
@@ -70,7 +72,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
-  const [selectedPrice, setSelectedPrice] = useState("All");
   const [selectedBudget, setSelectedBudget] = useState("any");
   const [selectedRating, setSelectedRating] = useState("All");
   const [selectedState, setSelectedState] = useState("All");
@@ -88,17 +89,15 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
   const [loading, setLoading] = useState(true);
 
   const cuisines = ["All", "Malay", "Chinese", "Indian", "Western", "Japanese", "Korean", "Thai", "Indonesian", "Vietnamese", "Arabic"];
-  const priceRanges = ["All", "Budget", "Mid-Range", "Premium"];
   const ratings = ["All", "4", "3", "2", "1"];
   const states = ["All", "Selangor", "Kuala Lumpur", "Penang", "Johor", "Perak", "Sabah", "Sarawak"];
   
   const sortOptions = [
     { value: "rating", label: "Highest Rated" },
-    { value: "price_low", label: "Price: Low to High" },
-    { value: "price_high", label: "Price: High to Low" },
+    { value: "menu_price_low", label: "Menu Price: Low to High" },
+    { value: "menu_price_high", label: "Menu Price: High to Low" },
     { value: "newest", label: "Newest First" },
-    { value: "distance", label: "Nearest First" },
-    { value: "menu_price_low", label: "Menu Price: Low to High" }
+    { value: "distance", label: "Nearest First" }
   ];
   
   const distanceOptions = [
@@ -316,18 +315,13 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
       filtered = filtered.filter(r => r.cuisine === selectedCuisine);
     }
 
-    if (selectedPrice !== "All") {
-      filtered = filtered.filter(r => r.priceRange === selectedPrice);
-    }
-
-    // NEW: Filter by menu price range
+    // Filter by menu price budget
     if (selectedBudget !== "any") {
       const budget = budgetOptions.find(b => b.value === selectedBudget);
       if (budget) {
         filtered = filtered.filter(r => {
           const minPrice = r.menuMinPrice || 0;
           const maxPrice = r.menuMaxPrice || 9999;
-          // Restaurant is included if its price range overlaps with selected budget
           return (minPrice <= budget.max && maxPrice >= budget.min);
         });
       }
@@ -371,26 +365,14 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     filtered.sort((a, b) => {
       if (sortBy === "rating") {
         return (b.rating || 0) - (a.rating || 0);
-      } else if (sortBy === "price_low") {
-        const getPriceValue = (price: string) => {
-          if (price.includes("Budget")) return 1;
-          if (price.includes("Mid-Range")) return 2;
-          if (price.includes("Premium")) return 3;
-          return 4;
-        };
-        return getPriceValue(a.priceRange) - getPriceValue(b.priceRange);
-      } else if (sortBy === "price_high") {
-        const getPriceValue = (price: string) => {
-          if (price.includes("Budget")) return 1;
-          if (price.includes("Mid-Range")) return 2;
-          if (price.includes("Premium")) return 3;
-          return 4;
-        };
-        return getPriceValue(b.priceRange) - getPriceValue(a.priceRange);
       } else if (sortBy === "menu_price_low") {
         const aMin = a.menuMinPrice || 9999;
         const bMin = b.menuMinPrice || 9999;
         return aMin - bMin;
+      } else if (sortBy === "menu_price_high") {
+        const aMax = a.menuMaxPrice || 0;
+        const bMax = b.menuMaxPrice || 0;
+        return bMax - aMax;
       } else if (sortBy === "newest") {
         return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
       } else if (sortBy === "distance" && userLocation) {
@@ -406,12 +388,11 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, selectedCuisine, selectedPrice, selectedBudget, selectedRating, selectedState, selectedArea, selectedDay, sortBy, distanceFilter, openNow, userLocation, restaurants]);
+  }, [searchTerm, selectedCuisine, selectedBudget, selectedRating, selectedState, selectedArea, selectedDay, sortBy, distanceFilter, openNow, userLocation, restaurants]);
 
   const clearAllFilters = () => {
     setSearchTerm("");
     setSelectedCuisine("All");
-    setSelectedPrice("All");
     setSelectedBudget("any");
     setSelectedRating("All");
     setSelectedState("All");
@@ -424,7 +405,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
 
   const hasActiveFilters = searchTerm !== "" || 
     selectedCuisine !== "All" || 
-    selectedPrice !== "All" || 
     selectedBudget !== "any" ||
     selectedRating !== "All" || 
     selectedState !== "All" || 
@@ -548,21 +528,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <DollarSign className="w-4 h-4 inline mr-1" />
-                  Price Range
-                </label>
-                <select
-                  value={selectedPrice}
-                  onChange={(e) => setSelectedPrice(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
-                >
-                  {priceRanges.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-
-              {/* NEW: Menu Price Budget Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <ChefHat className="w-4 h-4 inline mr-1" />
                   Budget (per item)
                 </label>
                 <select
@@ -732,12 +697,11 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
                     <span className="text-sm font-semibold text-gray-800">{getAverageRating(restaurant)}</span>
                   </div>
                 </div>
-                <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine} • {restaurant.priceRange}</p>
+                <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine}</p>
                 <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
                   <MapPin className="w-3 h-3" />
                   <span className="truncate">{restaurant.address}</span>
                 </div>
-                {/* NEW: Display menu price range if available */}
                 {getPriceRangeFromMenu(restaurant) && (
                   <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
                     <ChefHat className="w-3 h-3" />
