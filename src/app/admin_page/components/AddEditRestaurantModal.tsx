@@ -4,7 +4,7 @@ import { useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
 import { uploadMultipleToCloudinary } from "@/lib/cloudinary";
-import { X, Save, Loader2, Plus, Globe, MapPin, Phone, Clock, Utensils } from "lucide-react";
+import { X, Save, Loader2, Plus, Globe, MapPin, Phone, Clock, Utensils, Trash2, DollarSign } from "lucide-react";
 
 interface AddEditRestaurantModalProps {
   restaurant?: any;
@@ -16,26 +16,26 @@ interface AddEditRestaurantModalProps {
 const cuisines = ["Malay", "Chinese", "Indian", "Western", "Japanese", "Korean", "Thai", "Indonesian", "Vietnamese", "Arabic", "Other"];
 const priceRanges = ["Budget (RM 1-20)", "Mid-Range (RM 20-50)", "Premium (RM 50-100)", "Luxury (RM 100+)"];
 const states = ["Selangor", "Kuala Lumpur", "Penang", "Johor", "Perak", "Perlis", "Kedah", "Kelantan", "Terengganu", "Pahang", "Melaka", "Negeri Sembilan", "Sabah", "Sarawak", "Labuan", "Putrajaya"];
+const menuCategories = ["Main Course", "Appetizer", "Dessert", "Drinks", "Breakfast", "Lunch", "Dinner", "Snacks", "Other"];
 
-// Helper to extract open/close times from hours string
+interface MenuItem {
+  name: string;
+  price: number;
+  category: string;
+}
+
 const parseHoursToOpenClose = (hours: string) => {
   if (!hours) return { openTime: "09:00", closeTime: "22:00", is24Hours: false };
-  
-  // Check if it's 24 hours
   if (hours.toLowerCase().includes("24 hours") || hours.toLowerCase().includes("24hrs")) {
     return { openTime: "00:00", closeTime: "23:59", is24Hours: true };
   }
-  
-  // Try to parse "HH:MM AM/PM - HH:MM AM/PM" format
   const match = hours.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM)?)\s*-\s*(\d{1,2}(?::\d{2})?\s*(?:AM|PM)?)/i);
   if (match) {
     return { openTime: match[1].trim(), closeTime: match[2].trim(), is24Hours: false };
   }
-  
   return { openTime: "09:00", closeTime: "22:00", is24Hours: false };
 };
 
-// Helper to combine open/close times into hours string
 const combineToHoursString = (openTime: string, closeTime: string, is24Hours: boolean) => {
   if (is24Hours) return "24 Hours";
   return `${openTime} - ${closeTime}`;
@@ -44,11 +44,23 @@ const combineToHoursString = (openTime: string, closeTime: string, is24Hours: bo
 export default function AddEditRestaurantModal({ restaurant, user, onClose, onRefresh }: AddEditRestaurantModalProps) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-  const [newMenuItem, setNewMenuItem] = useState("");
+  const [newMenuItem, setNewMenuItem] = useState({ name: "", price: 0, category: "Main Course" });
   
-  // Parse existing hours into open/close times
   const existingHours = parseHoursToOpenClose(restaurant?.hours || "");
   
+  const parseExistingMenu = () => {
+    if (!restaurant?.menu) return [];
+    if (restaurant.menu.length === 0) return [];
+    if (typeof restaurant.menu[0] === 'string') {
+      return restaurant.menu.map((item: string) => ({
+        name: item,
+        price: 0,
+        category: "Other"
+      }));
+    }
+    return restaurant.menu;
+  };
+
   const [formData, setFormData] = useState({
     name: restaurant?.name || "",
     cuisine: restaurant?.cuisine || "",
@@ -67,20 +79,29 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
     openingDays: restaurant?.openingDays || [],
     website: restaurant?.website || "",
     direction: restaurant?.direction || "",
-    menu: restaurant?.menu || [],
+    menu: parseExistingMenu() as MenuItem[],
     imageFiles: [] as File[],
     imageUrls: restaurant?.images || []
   });
 
   const addMenuItem = () => {
-    if (newMenuItem.trim()) {
-      setFormData({ ...formData, menu: [...formData.menu, newMenuItem.trim()] });
-      setNewMenuItem("");
+    if (newMenuItem.name.trim()) {
+      setFormData({
+        ...formData,
+        menu: [...formData.menu, { ...newMenuItem, price: newMenuItem.price || 0 }]
+      });
+      setNewMenuItem({ name: "", price: 0, category: "Main Course" });
     }
   };
 
   const removeMenuItem = (index: number) => {
-    setFormData({ ...formData, menu: formData.menu.filter((_: string, i: number) => i !== index) });
+    setFormData({ ...formData, menu: formData.menu.filter((_: MenuItem, i: number) => i !== index) });
+  };
+
+  const updateMenuItem = (index: number, field: keyof MenuItem, value: string | number) => {
+    const updatedMenu = [...formData.menu];
+    updatedMenu[index] = { ...updatedMenu[index], [field]: value };
+    setFormData({ ...formData, menu: updatedMenu });
   };
 
   const handleImageUpload = (files: FileList | null) => {
@@ -107,6 +128,14 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
     });
   };
 
+  const calculatePriceRangeFromMenu = () => {
+    const prices = formData.menu.filter(item => item.price > 0).map(item => item.price);
+    if (prices.length === 0) return null;
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    return { min: minPrice, max: maxPrice };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
@@ -124,7 +153,7 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
         imageUrls = await uploadMultipleToCloudinary(formData.imageFiles);
       }
 
-      // Combine open/close times into hours string
+      const menuPriceRange = calculatePriceRangeFromMenu();
       const hoursString = combineToHoursString(formData.openTime, formData.closeTime, formData.is24Hours);
 
       const restaurantData = {
@@ -146,6 +175,8 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
         website: formData.website.trim() || "",
         direction: formData.direction.trim() || "",
         menu: formData.menu,
+        menuMinPrice: menuPriceRange?.min || 0,
+        menuMaxPrice: menuPriceRange?.max || 0,
         images: imageUrls,
         rating: restaurant?.rating || 0,
         totalReviews: restaurant?.totalReviews || 0,
@@ -178,7 +209,8 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 flex justify-between items-center">
+        {/* Header - kurangkan padding supaya tak tutup content bila scroll */}
+        <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 px-6 py-2 flex justify-between items-center z-10">
           <div className="flex items-center gap-2">
             <Utensils className="w-5 h-5 text-white" />
             <h3 className="text-xl font-bold text-white">
@@ -190,14 +222,15 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Form - tambah padding bottom untuk ruang scroll */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 pb-32">
           {message && (
             <div className={`p-3 rounded-lg ${message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
               {message}
             </div>
           )}
           
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Basic Information */}
             <div className="md:col-span-2">
               <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">📋 Basic Information</h4>
@@ -260,17 +293,17 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
               <input type="text" placeholder="101.6869" value={formData.lng} onChange={(e) => setFormData({ ...formData, lng: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white" />
             </div>
             
-            {/* Contact & Web */}
+            {/* Contact & Web - Vertical layout untuk elak overlap */}
             <div className="md:col-span-2">
               <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2 mt-2">📞 Contact & Online</h4>
             </div>
             
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-800 mb-1">Phone Number</label>
               <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white" placeholder="+60 12-345 6789" />
             </div>
             
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-800 mb-1">Website</label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -278,9 +311,9 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
               </div>
             </div>
             
-            {/* NEW: Operating Hours with Open Time & Close Time */}
+            {/* Operating Hours - Vertical layout untuk elak overlap */}
             <div className="md:col-span-2">
-              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2 mt-2">🕐 Operating Hours</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex-items-center gap-2 mt-2">🕐 Operating Hours</h4>
             </div>
 
             <div className="md:col-span-2">
@@ -303,14 +336,13 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
             </div>
 
             {!formData.is24Hours && (
-              <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                <div>
+              <>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-800 mb-1">Open Time *</label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <input
                       type="text"
-                      required={!formData.is24Hours}
                       placeholder="9:00 AM"
                       value={formData.openTime}
                       onChange={(e) => setFormData({ ...formData, openTime: e.target.value })}
@@ -319,13 +351,13 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Examples: 9:00 AM, 10AM, 08:30, 14:00</p>
                 </div>
-                <div>
+                
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-800 mb-1">Close Time *</label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <input
                       type="text"
-                      required={!formData.is24Hours}
                       placeholder="10:00 PM"
                       value={formData.closeTime}
                       onChange={(e) => setFormData({ ...formData, closeTime: e.target.value })}
@@ -334,13 +366,13 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Examples: 10:00 PM, 10PM, 22:00, 02:00 (next day)</p>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Opening Days */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-800 mb-1">Opening Days</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map((day) => (
                   <label key={day} className="flex items-center gap-2 text-gray-700 text-sm">
                     <input
@@ -360,7 +392,7 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
                         }
                       }}
                     />
-                    {day}
+                    <span className="text-sm">{day.slice(0, 3)}</span>
                   </label>
                 ))}
               </div>
@@ -379,22 +411,86 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
             
             {/* Menu Items */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-800 mb-1">Menu Items</label>
-              <div className="flex gap-2 mb-2">
-                <input type="text" value={newMenuItem} onChange={(e) => setNewMenuItem(e.target.value)} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white" placeholder="e.g., Nasi Lemak - RM 8" />
-                <button type="button" onClick={addMenuItem} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.menu.map((item: string, index: number) => (
-                  <div key={index} className="bg-gray-100 rounded-lg px-3 py-1 flex items-center gap-2">
-                    <span className="text-sm text-gray-700">{item}</span>
-                    <button type="button" onClick={() => removeMenuItem(index)} className="text-red-500 hover:text-red-700">
-                      <X className="w-3 h-3" />
-                    </button>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2 mt-2">🍽️ Menu Items</h4>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Item name"
+                    value={newMenuItem.name}
+                    onChange={(e) => setNewMenuItem({ ...newMenuItem, name: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+                  />
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="number"
+                      placeholder="Price (RM)"
+                      value={newMenuItem.price || ''}
+                      onChange={(e) => setNewMenuItem({ ...newMenuItem, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+                    />
                   </div>
-                ))}
+                  <select
+                    value={newMenuItem.category}
+                    onChange={(e) => setNewMenuItem({ ...newMenuItem, category: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+                  >
+                    {menuCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={addMenuItem}
+                  className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Add Menu Item
+                </button>
+                
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {formData.menu.map((item: MenuItem, index: number) => (
+                    <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={(e) => updateMenuItem(index, 'name', e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded-lg text-gray-900 bg-white"
+                        />
+                        <div className="relative">
+                          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <input
+                            type="number"
+                            value={item.price || ''}
+                            onChange={(e) => updateMenuItem(index, 'price', parseFloat(e.target.value) || 0)}
+                            className="w-full pl-10 pr-3 py-1 border border-gray-300 rounded-lg text-gray-900 bg-white"
+                            placeholder="Price"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <select
+                            value={item.category}
+                            onChange={(e) => updateMenuItem(index, 'category', e.target.value)}
+                            className="flex-1 px-3 py-1 border border-gray-300 rounded-lg text-gray-900 bg-white"
+                          >
+                            {menuCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => removeMenuItem(index)}
+                            className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {formData.menu.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">No menu items added yet.</p>
+                )}
               </div>
             </div>
             
