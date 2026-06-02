@@ -14,7 +14,6 @@ interface AddEditRestaurantModalProps {
 }
 
 const cuisines = ["Malay", "Chinese", "Indian", "Western", "Japanese", "Korean", "Thai", "Indonesian", "Vietnamese", "Arabic", "Other"];
-const priceRanges = ["Budget (RM 1-20)", "Mid-Range (RM 20-50)", "Premium (RM 50-100)", "Luxury (RM 100+)"];
 const states = ["Selangor", "Kuala Lumpur", "Penang", "Johor", "Perak", "Perlis", "Kedah", "Kelantan", "Terengganu", "Pahang", "Melaka", "Negeri Sembilan", "Sabah", "Sarawak", "Labuan", "Putrajaya"];
 const menuCategories = ["Main Course", "Appetizer", "Dessert", "Drinks", "Breakfast", "Lunch", "Dinner", "Snacks", "Other"];
 
@@ -41,6 +40,24 @@ const combineToHoursString = (openTime: string, closeTime: string, is24Hours: bo
   return `${openTime} - ${closeTime}`;
 };
 
+// Function to calculate average price from menu
+const calculateAveragePrice = (menu: MenuItem[]) => {
+  const prices = menu.filter(item => item.price > 0).map(item => item.price);
+  if (prices.length === 0) return 0;
+  const sum = prices.reduce((a, b) => a + b, 0);
+  return sum / prices.length;
+};
+
+// Function to calculate min and max price
+const calculatePriceRange = (menu: MenuItem[]) => {
+  const prices = menu.filter(item => item.price > 0).map(item => item.price);
+  if (prices.length === 0) return { min: 0, max: 0 };
+  return {
+    min: Math.min(...prices),
+    max: Math.max(...prices)
+  };
+};
+
 export default function AddEditRestaurantModal({ restaurant, user, onClose, onRefresh }: AddEditRestaurantModalProps) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -64,8 +81,6 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
   const [formData, setFormData] = useState({
     name: restaurant?.name || "",
     cuisine: restaurant?.cuisine || "",
-    priceRange: restaurant?.priceRange || "Budget (RM 1-20)",
-    estimatedCost: restaurant?.estimatedCost || "",
     address: restaurant?.address || "",
     state: restaurant?.state || "Kuala Lumpur",
     area: restaurant?.area || "",
@@ -128,20 +143,12 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
     });
   };
 
-  const calculatePriceRangeFromMenu = () => {
-    const prices = formData.menu.filter(item => item.price > 0).map(item => item.price);
-    if (prices.length === 0) return null;
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    return { min: minPrice, max: maxPrice };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
     setMessage("");
 
-    if (!formData.name || !formData.cuisine || !formData.estimatedCost || !formData.address) {
+    if (!formData.name || !formData.cuisine || !formData.address) {
       setMessage("Please fill in all required fields (*)");
       setUploading(false);
       return;
@@ -153,14 +160,22 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
         imageUrls = await uploadMultipleToCloudinary(formData.imageFiles);
       }
 
-      const menuPriceRange = calculatePriceRangeFromMenu();
       const hoursString = combineToHoursString(formData.openTime, formData.closeTime, formData.is24Hours);
+      const priceRange = calculatePriceRange(formData.menu);
+      const avgPrice = calculateAveragePrice(formData.menu);
+
+      // Format estimated cost for display
+      let estimatedCost = "RM 10-20";
+      if (priceRange.min > 0 && priceRange.max > 0) {
+        estimatedCost = `RM ${priceRange.min} - RM ${priceRange.max}`;
+      } else if (avgPrice > 0) {
+        estimatedCost = `~RM ${Math.round(avgPrice)}`;
+      }
 
       const restaurantData = {
         name: formData.name.trim(),
         cuisine: formData.cuisine,
-        priceRange: formData.priceRange,
-        estimatedCost: formData.estimatedCost.trim(),
+        estimatedCost: estimatedCost,
         address: formData.address.trim(),
         state: formData.state,
         area: formData.area,
@@ -175,8 +190,9 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
         website: formData.website.trim() || "",
         direction: formData.direction.trim() || "",
         menu: formData.menu,
-        menuMinPrice: menuPriceRange?.min || 0,
-        menuMaxPrice: menuPriceRange?.max || 0,
+        menuMinPrice: priceRange.min,
+        menuMaxPrice: priceRange.max,
+        averagePrice: avgPrice,
         images: imageUrls,
         rating: restaurant?.rating || 0,
         totalReviews: restaurant?.totalReviews || 0,
@@ -209,7 +225,6 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header - kurangkan padding supaya tak tutup content bila scroll */}
         <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 px-6 py-2 flex justify-between items-center z-10">
           <div className="flex items-center gap-2">
             <Utensils className="w-5 h-5 text-white" />
@@ -222,7 +237,6 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
           </button>
         </div>
         
-        {/* Form - tambah padding bottom untuk ruang scroll */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 pb-32">
           {message && (
             <div className={`p-3 rounded-lg ${message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
@@ -247,18 +261,6 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
                 <option value="">Select Cuisine</option>
                 {cuisines.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">Price Range *</label>
-              <select required value={formData.priceRange} onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white">
-                {priceRanges.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">Estimated Cost *</label>
-              <input type="text" required placeholder="RM 10-20" value={formData.estimatedCost} onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white" />
             </div>
             
             {/* Location */}
@@ -293,7 +295,7 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
               <input type="text" placeholder="101.6869" value={formData.lng} onChange={(e) => setFormData({ ...formData, lng: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white" />
             </div>
             
-            {/* Contact & Web - Vertical layout untuk elak overlap */}
+            {/* Contact & Web */}
             <div className="md:col-span-2">
               <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2 mt-2">📞 Contact & Online</h4>
             </div>
@@ -311,9 +313,9 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
               </div>
             </div>
             
-            {/* Operating Hours - Vertical layout untuk elak overlap */}
+            {/* Operating Hours */}
             <div className="md:col-span-2">
-              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex-items-center gap-2 mt-2">🕐 Operating Hours</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2 mt-2">🕐 Operating Hours</h4>
             </div>
 
             <div className="md:col-span-2">
@@ -489,7 +491,10 @@ export default function AddEditRestaurantModal({ restaurant, user, onClose, onRe
                 </div>
                 
                 {formData.menu.length === 0 && (
-                  <p className="text-center text-gray-500 py-4">No menu items added yet.</p>
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No menu items added yet.</p>
+                    <p className="text-xs text-gray-400 mt-1">Add menu items to show customers what you offer.</p>
+                  </div>
                 )}
               </div>
             </div>
