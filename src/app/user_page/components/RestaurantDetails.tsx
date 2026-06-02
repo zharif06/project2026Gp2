@@ -247,17 +247,20 @@ export default function RestaurantDetails({ restaurant, setCurrentPage, onReview
   const openingDaysList = restaurant.openingDays || [];
 
   // Menu data
-  const menuItems: MenuItem[] = restaurant.menu || [];
+  const menuItems: MenuItem[] = (restaurant.menu || []).filter((item: any) => item && item.name);
   const menuCategories = ["all", ...new Set(menuItems.map(item => item.category).filter(Boolean))];
   const filteredMenu = activeMenuCategory === "all" 
     ? menuItems 
     : menuItems.filter(item => item.category === activeMenuCategory);
   const totalMenuItems = menuItems.length;
-  const menuPrices = menuItems.filter(item => item.price > 0).map(item => item.price);
+  const menuPrices = menuItems.filter(item => item.price && item.price > 0).map(item => item.price);
   const menuMinPrice = menuPrices.length > 0 ? Math.min(...menuPrices) : null;
   const menuMaxPrice = menuPrices.length > 0 ? Math.max(...menuPrices) : null;
+  const averagePrice = menuPrices.length > 0 
+    ? (menuPrices.reduce((a, b) => a + b, 0) / menuPrices.length).toFixed(2)
+    : null;
 
-  // Google Maps embed URL (free, no API key - using OpenStreetMap)
+  // Google Maps embed URL
   const mapEmbedUrl = restaurant.location?.lat && restaurant.location?.lng 
     ? `https://www.openstreetmap.org/export/embed.html?bbox=${restaurant.location.lng - 0.01},${restaurant.location.lat - 0.01},${restaurant.location.lng + 0.01},${restaurant.location.lat + 0.01}&layer=mapnik&marker=${restaurant.location.lat},${restaurant.location.lng}`
     : null;
@@ -295,11 +298,11 @@ export default function RestaurantDetails({ restaurant, setCurrentPage, onReview
               <span>{displayRating}</span>
               <span className="mx-2">•</span>
               <span>{restaurant.cuisine}</span>
-              {menuMinPrice && menuMaxPrice && (
+              {averagePrice && parseFloat(averagePrice) > 0 && (
                 <>
                   <span className="mx-2">•</span>
-                  <ChefHat className="w-5 h-5" />
-                  <span>RM {menuMinPrice} - RM {menuMaxPrice}</span>
+                  <DollarSign className="w-4 h-4" />
+                  <span>~RM {averagePrice}</span>
                 </>
               )}
             </div>
@@ -322,64 +325,74 @@ export default function RestaurantDetails({ restaurant, setCurrentPage, onReview
                 <p className="text-gray-700 leading-relaxed">{restaurant.description || "No description available."}</p>
               </div>
 
-              {/* Menu Section */}
-              {menuItems.length > 0 && (
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <ChefHat className="w-5 h-5 text-orange-500" />
-                    Menu & Pricing
-                  </h2>
-                  
-                  {menuCategories.length > 2 && (
-                    <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto pb-2">
-                      {menuCategories.map(category => (
-                        <button
-                          key={category}
-                          onClick={() => setActiveMenuCategory(category)}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                            activeMenuCategory === category
-                              ? "bg-orange-500 text-white"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          }`}
-                        >
-                          {category === "all" ? "All Items" : category}
-                        </button>
+              {/* Menu Section - WITH "No menu available" message */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <ChefHat className="w-5 h-5 text-orange-500" />
+                  Menu & Pricing
+                </h2>
+                
+                {menuItems.length === 0 ? (
+                  <div className="bg-yellow-50 rounded-lg p-4 text-center border border-yellow-200">
+                    <p className="text-yellow-700">📋 No menu available yet.</p>
+                    <p className="text-xs text-yellow-600 mt-1">This restaurant hasn't added their menu items.</p>
+                  </div>
+                ) : (
+                  <>
+                    {menuCategories.length > 2 && (
+                      <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto pb-2">
+                        {menuCategories.map(category => (
+                          <button
+                            key={category}
+                            onClick={() => setActiveMenuCategory(category)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              activeMenuCategory === category
+                                ? "bg-orange-500 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {category === "all" ? "All Items" : category}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                      {filteredMenu.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-3 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800">{item.name}</p>
+                            {item.category && item.category !== "Other" && (
+                              <p className="text-xs text-gray-400">{item.category}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-600">
+                              {item.price && item.price > 0 ? `RM ${item.price.toFixed(2)}` : "Price not set"}
+                            </p>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  )}
-                  
-                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                    {filteredMenu.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center py-3 border-b border-gray-100">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-800">{item.name}</p>
-                          {item.category && item.category !== "Other" && (
-                            <p className="text-xs text-gray-400">{item.category}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-green-600">
-  {item.price && item.price > 0 ? `RM ${item.price.toFixed(2)}` : "Price not set"}
-</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {filteredMenu.length === 0 && (
-                    <p className="text-gray-500 text-center py-4">No menu items in this category.</p>
-                  )}
-                  
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600">
-                      📋 Total {totalMenuItems} menu item{totalMenuItems !== 1 ? 's' : ''}
-                      {menuMinPrice && menuMaxPrice && (
-                        <> • Price range: <strong>RM {menuMinPrice} - RM {menuMaxPrice}</strong></>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
+                    
+                    {filteredMenu.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No menu items in this category.</p>
+                    )}
+                    
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        📋 Total {totalMenuItems} menu item{totalMenuItems !== 1 ? 's' : ''}
+                        {menuMinPrice && menuMaxPrice && menuMinPrice > 0 && menuMaxPrice > 0 && (
+                          <> • Price range: <strong>RM {menuMinPrice} - RM {menuMaxPrice}</strong></>
+                        )}
+                        {averagePrice && parseFloat(averagePrice) > 0 && (
+                          <> • Average: <strong>RM {averagePrice}</strong></>
+                        )}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-3">Location & Hours</h2>
@@ -394,7 +407,6 @@ export default function RestaurantDetails({ restaurant, setCurrentPage, onReview
                     </div>
                   </div>
                   
-                  {/* Google Maps / OpenStreetMap Embed */}
                   {mapEmbedUrl && (
                     <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
                       <iframe
@@ -477,9 +489,15 @@ export default function RestaurantDetails({ restaurant, setCurrentPage, onReview
 
             <div className="space-y-6">
               <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">💰 Cost Estimation</h3>
-                <p className="text-3xl font-bold text-green-600 mb-2">{restaurant.estimatedCost}</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">💰 Estimated Cost</h3>
+                <p className="text-3xl font-bold text-green-600 mb-2">{restaurant.estimatedCost || "RM 10-20"}</p>
                 <p className="text-sm text-gray-600">per meal (average)</p>
+                {averagePrice && parseFloat(averagePrice) > 0 && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-xs text-gray-500">Average menu item price</p>
+                    <p className="text-lg font-semibold text-green-600">RM {averagePrice}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
