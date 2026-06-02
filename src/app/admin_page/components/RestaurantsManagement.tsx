@@ -25,8 +25,6 @@ interface RestaurantsManagementProps {
   onRefresh: () => void;
 }
 
-const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
 export default function RestaurantsManagement({ restaurants, currentUser, onRefresh }: RestaurantsManagementProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -97,31 +95,31 @@ export default function RestaurantsManagement({ restaurants, currentUser, onRefr
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Restaurant Management</h1>
-          <p className="text-gray-500 mt-1">Manage all restaurant listings, approve or reject submissions</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Restaurant Management</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">Manage all restaurant listings, approve or reject submissions</p>
         </div>
         <button 
           onClick={() => {
             setSelectedRestaurant(null);
             setShowEditModal(true);
           }} 
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:shadow-lg transition-all"
+          className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:shadow-lg transition-all text-sm sm:text-base w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" /> Add Restaurant
         </button>
       </div>
 
       {message.text && (
-        <div className={`mb-4 p-3 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+        <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
           {message.text}
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-        <div className="flex flex-wrap gap-4">
+      {/* Filters - Mobile Responsive */}
+      <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -129,13 +127,13 @@ export default function RestaurantsManagement({ restaurants, currentUser, onRefr
               placeholder="Search by name or cuisine..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white text-sm sm:text-base"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-700 bg-white"
+            className="px-3 sm:px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 text-gray-700 bg-white text-sm sm:text-base"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -145,56 +143,57 @@ export default function RestaurantsManagement({ restaurants, currentUser, onRefr
         </div>
       </div>
 
-      {/* Restaurant Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* Restaurant Cards Grid - Mobile Responsive */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {filteredRestaurants.map((restaurant: any) => (
           <div key={restaurant.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-            <div className="relative h-48">
+            <div className="relative h-40 sm:h-48">
               <img 
                 src={restaurant.images?.[0] || "https://placehold.co/400x300/e2e8f0/475569?text=No+Image"} 
                 alt={restaurant.name}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-3 right-3">
+              <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
                 {getStatusBadge(restaurant.status)}
               </div>
-              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+              <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
                 <div className="flex items-center gap-1 text-yellow-400">
-                  <Star className="w-4 h-4 fill-current" />
-                  <span className="text-white text-sm font-semibold">{restaurant.rating || "New"}</span>
+                  <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
+                  <span className="text-white text-sm font-semibold">
+  {restaurant.rating && restaurant.rating > 0 ? restaurant.rating.toFixed(1) : "New"}
+</span>
                 </div>
               </div>
             </div>
-            <div className="p-4">
-              <h3 className="text-lg font-bold text-gray-800">{restaurant.name}</h3>
-              <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine} • {restaurant.priceRange}</p>
-              <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
+            <div className="p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">{restaurant.name}</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-2">{restaurant.cuisine} • {restaurant.priceRange}</p>
+              <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3">
                 <MapPin className="w-3 h-3" />
                 <span className="truncate">{restaurant.address}</span>
               </div>
               
-              {/* NEW: Opening Days Display for Admin */}
-              <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
+              <div className="flex items-center gap-2 text-gray-500 text-xs mb-2 sm:mb-3">
                 <Calendar className="w-3 h-3" />
                 <span>Open: {getOpeningDaysDisplay(restaurant.openingDays)}</span>
               </div>
               
-              <div className="flex items-center gap-2 mb-3">
-                <DollarSign className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-semibold text-gray-700">{restaurant.estimatedCost}</span>
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
+                <span className="text-xs sm:text-sm font-semibold text-gray-700">{restaurant.estimatedCost}</span>
               </div>
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-2 sm:mt-3">
                 {restaurant.status === "pending" && (
                   <>
-                    <button onClick={() => handleApprove(restaurant.id)} className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">Approve</button>
-                    <button onClick={() => handleReject(restaurant.id)} className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 text-sm font-medium">Reject</button>
+                    <button onClick={() => handleApprove(restaurant.id)} className="flex-1 bg-green-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-green-700 text-xs sm:text-sm font-medium">Approve</button>
+                    <button onClick={() => handleReject(restaurant.id)} className="flex-1 bg-red-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-red-700 text-xs sm:text-sm font-medium">Reject</button>
                   </>
                 )}
-                <button onClick={() => { setSelectedRestaurant(restaurant); setShowEditModal(true); }} className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
-                  <Edit className="w-4 h-4 inline mr-1" /> Edit
+                <button onClick={() => { setSelectedRestaurant(restaurant); setShowEditModal(true); }} className="flex-1 bg-blue-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium">
+                  <Edit className="w-3 h-3 sm:w-4 sm:h-4 inline mr-0 sm:mr-1" /> Edit
                 </button>
-                <button onClick={() => handleDelete(restaurant.id)} className="px-3 py-2 bg-gray-100 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium">
-                  <Trash2 className="w-4 h-4" />
+                <button onClick={() => handleDelete(restaurant.id)} className="px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 text-red-600 rounded-lg hover:bg-red-50 text-xs sm:text-sm font-medium">
+                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
@@ -203,8 +202,8 @@ export default function RestaurantsManagement({ restaurants, currentUser, onRefr
       </div>
 
       {filteredRestaurants.length === 0 && (
-        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-          <Utensils className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <div className="bg-white rounded-xl shadow-lg p-8 sm:p-12 text-center">
+          <Utensils className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">No restaurants found</p>
         </div>
       )}
