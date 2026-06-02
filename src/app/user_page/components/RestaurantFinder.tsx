@@ -24,7 +24,6 @@ type Restaurant = {
   id: string;
   name: string;
   cuisine: string;
-  priceRange: string;
   estimatedCost: string;
   address: string;
   state: string;
@@ -42,6 +41,7 @@ type Restaurant = {
   menu?: MenuItem[];
   menuMinPrice?: number;
   menuMaxPrice?: number;
+  averagePrice?: number;
 };
 
 interface MenuItem {
@@ -134,7 +134,8 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
           totalReviews: data.totalReviews || 0,
           menu: data.menu || [],
           menuMinPrice: data.menuMinPrice || 0,
-          menuMaxPrice: data.menuMaxPrice || 0
+          menuMaxPrice: data.menuMaxPrice || 0,
+          averagePrice: data.averagePrice || 0
         } as Restaurant);
       });
       setRestaurants(restaurantsData);
@@ -420,13 +421,21 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     return `${rating.toFixed(1)} (${totalReviews})`;
   };
 
-  const getPriceRangeFromMenu = (restaurant: Restaurant) => {
+  const getMenuInfo = (restaurant: Restaurant) => {
     const minPrice = restaurant.menuMinPrice;
     const maxPrice = restaurant.menuMaxPrice;
-    if (minPrice && maxPrice && minPrice > 0 && maxPrice > 0) {
-      return `RM ${minPrice} - RM ${maxPrice}`;
+    const avgPrice = restaurant.averagePrice;
+    const hasMenu = restaurant.menu && restaurant.menu.length > 0;
+    
+    if (!hasMenu) {
+      return { hasMenu: false, display: null };
     }
-    return null;
+    
+    if (minPrice && maxPrice && minPrice > 0 && maxPrice > 0) {
+      return { hasMenu: true, display: `RM ${minPrice} - RM ${maxPrice}` };
+    }
+    
+    return { hasMenu: true, display: "Menu available" };
   };
 
   const getOpeningDaysDisplay = (openingDays: string[]) => {
@@ -665,65 +674,74 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRestaurants.map((restaurant) => (
-            <div
-              key={restaurant.id}
-              onClick={() => { setSelectedRestaurant(restaurant); setCurrentPage("restaurantDetails"); }}
-              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border border-gray-100"
-            >
-              <div className="relative h-48">
-                <img
-                  src={restaurant.images?.[0] || "https://placehold.co/400x300/e2e8f0/475569?text=No+Image"}
-                  alt={restaurant.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded-lg text-sm font-semibold">
-                  {restaurant.estimatedCost}
-                </div>
-                <div className="absolute bottom-2 right-2 flex gap-2">
-                  <button onClick={(e) => handleLove(restaurant.id, e)} className="bg-white/90 backdrop-blur-sm p-2 rounded-full hover:scale-110 transition">
-                    <Heart className={`w-5 h-5 ${lovedRestaurants.has(restaurant.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-                  </button>
-                  <button onClick={(e) => handleSave(restaurant.id, e)} className="bg-white/90 backdrop-blur-sm p-2 rounded-full hover:scale-110 transition">
-                    <Bookmark className={`w-5 h-5 ${savedRestaurants.has(restaurant.id) ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}`} />
-                  </button>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-bold text-gray-900">{restaurant.name}</h3>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                    <span className="text-sm font-semibold text-gray-800">{getAverageRating(restaurant)}</span>
+          {filteredRestaurants.map((restaurant) => {
+            const menuInfo = getMenuInfo(restaurant);
+            
+            return (
+              <div
+                key={restaurant.id}
+                onClick={() => { setSelectedRestaurant(restaurant); setCurrentPage("restaurantDetails"); }}
+                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border border-gray-100"
+              >
+                <div className="relative h-48">
+                  <img
+                    src={restaurant.images?.[0] || "https://placehold.co/400x300/e2e8f0/475569?text=No+Image"}
+                    alt={restaurant.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded-lg text-sm font-semibold">
+                    {restaurant.estimatedCost}
+                  </div>
+                  <div className="absolute bottom-2 right-2 flex gap-2">
+                    <button onClick={(e) => handleLove(restaurant.id, e)} className="bg-white/90 backdrop-blur-sm p-2 rounded-full hover:scale-110 transition">
+                      <Heart className={`w-5 h-5 ${lovedRestaurants.has(restaurant.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                    </button>
+                    <button onClick={(e) => handleSave(restaurant.id, e)} className="bg-white/90 backdrop-blur-sm p-2 rounded-full hover:scale-110 transition">
+                      <Bookmark className={`w-5 h-5 ${savedRestaurants.has(restaurant.id) ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}`} />
+                    </button>
                   </div>
                 </div>
-                <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine}</p>
-                <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                  <MapPin className="w-3 h-3" />
-                  <span className="truncate">{restaurant.address}</span>
-                </div>
-                {getPriceRangeFromMenu(restaurant) && (
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-gray-900">{restaurant.name}</h3>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                      <span className="text-sm font-semibold text-gray-800">{getAverageRating(restaurant)}</span>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine}</p>
+                  <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
+                    <MapPin className="w-3 h-3" />
+                    <span className="truncate">{restaurant.address}</span>
+                  </div>
+                  
+                  {/* Menu info with "No menu available" indicator */}
                   <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
                     <ChefHat className="w-3 h-3" />
-                    <span>Menu: {getPriceRangeFromMenu(restaurant)}</span>
+                    {menuInfo.hasMenu ? (
+                      <span>Menu: {menuInfo.display}</span>
+                    ) : (
+                      <span className="text-yellow-600">No menu available</span>
+                    )}
                   </div>
-                )}
-                <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
-                  <Calendar className="w-3 h-3" />
-                  <span>Open: {getOpeningDaysDisplay(restaurant.openingDays)}</span>
+                  
+                  <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
+                    <Calendar className="w-3 h-3" />
+                    <span>Open: {getOpeningDaysDisplay(restaurant.openingDays)}</span>
+                  </div>
+                  {restaurant.hours && (
+                    <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                      <Clock className="w-3 h-3" />
+                      <span>{restaurant.hours}</span>
+                    </div>
+                  )}
+                  <button className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                    View Details
+                  </button>
                 </div>
-                {restaurant.hours && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                    <Clock className="w-3 h-3" />
-                    <span>{restaurant.hours}</span>
-                  </div>
-                )}
-                <button className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
-                  View Details
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
