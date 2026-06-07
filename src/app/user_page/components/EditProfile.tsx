@@ -187,14 +187,16 @@ export default function EditProfile({ user, setCurrentPage }: EditProfileProps) 
           </div>
 
           {photoURL && (
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200">
-                <img src={photoURL} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-              <span className="text-xs sm:text-sm text-gray-600">Profile photo preview</span>
-            </div>
-          )}
-
+  <div 
+    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+    onClick={() => window.open(photoURL, '_blank')}
+  >
+    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200">
+      <img src={photoURL} alt="Preview" className="w-full h-full object-cover" />
+    </div>
+    <span className="text-xs sm:text-sm text-gray-600">Click to view full size ↗</span>
+  </div>
+)}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="submit"
