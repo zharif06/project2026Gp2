@@ -2,7 +2,7 @@
 
 MakanBajet is a comprehensive restaurant discovery and management platform that helps users find affordable restaurants, read reviews, and save their favorite dining spots.
 
-🔗 **Live Website:** [https://project2026gp2.vercel.app](https://project2026gp2.vercel.app)
+🔗 **Live Website:** [https://project2026-gp2-git-main-rookierank-2073s-projects.vercel.app/login_page](https://project2026-gp2-git-main-rookierank-2073s-projects.vercel.app/login_page)
 
 ---
 
