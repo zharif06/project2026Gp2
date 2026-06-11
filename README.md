@@ -1,4 +1,4 @@
-<img width="1919" height="1078" alt="image" src="https://github.com/user-attachments/assets/46f921fb-fe59-411e-b8d7-247edce8be66" /># 🍽️ MakanBajet - Restaurant Discovery Platform
+# 🍽️ MakanBajet - Restaurant Discovery Platform
 
 MakanBajet is a comprehensive restaurant discovery and management platform that helps users find affordable restaurants, read reviews, and save their favorite dining spots. The system includes three user roles: Admin, Staff, and Regular User.
 
