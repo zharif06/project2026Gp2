@@ -1,6 +1,10 @@
 # 🍽️ MakanBajet - Restaurant Discovery Platform
 
-MakanBajet is a comprehensive restaurant discovery and management platform that helps users find affordable restaurants, read reviews, and save their favorite dining spots. The system includes three user roles: Admin, Staff, and Regular User.
+MakanBajet is a comprehensive restaurant discovery and management platform that helps users find affordable restaurants, read reviews, and save their favorite dining spots.
+
+🔗 **Live Website:** [https://project2026gp2.vercel.app](https://project2026gp2.vercel.app)
+
+---
 
 ## 📋 Table of Contents
 
@@ -15,8 +19,7 @@ MakanBajet is a comprehensive restaurant discovery and management platform that 
 - [Project Structure](#project-structure)
 - [User Roles](#user-roles)
 - [Screenshots](#screenshots)
-- [Contributors](#contributors)
-- [License](#license)
+- [References](#references)
 
 ---
 
@@ -28,14 +31,15 @@ MakanBajet is a comprehensive restaurant discovery and management platform that 
 - Filter restaurants by price range, rating, opening days, distance
 - View restaurant details including menu, hours, location map
 - Write reviews with ratings (1-5 stars)
-- Love and save favorite restaurants
+- Love ❤️ and save 🔖 favorite restaurants
 - View personal dashboard with activity stats
 - Edit profile and upload profile picture
+- Dark mode support
 
 ### 👨‍💼 Staff Features
 - Add and manage own restaurant listings
 - View customer reviews for owned restaurants
-- Edit restaurant details including menu items
+- Edit restaurant details including menu items with prices
 - Track restaurant performance
 
 ### 👑 Admin Features
@@ -48,10 +52,10 @@ MakanBajet is a comprehensive restaurant discovery and management platform that 
 
 ### 🗺️ Additional Features
 - Location-based restaurant search
-- Google Maps/OpenStreetMap integration
-- Menu management with pricing
+- OpenStreetMap integration for location display
+- Menu management with pricing (auto-calculate average price)
 - Responsive design for mobile and desktop
-- Dark mode support
+- "No menu available" indicator for restaurants
 
 ---
 
@@ -83,9 +87,8 @@ MakanBajet is a comprehensive restaurant discovery and management platform that 
 | npm | Package manager |
 | VS Code | Code editor |
 
----
 
-## 🏗️ System Architecture
+
 
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
