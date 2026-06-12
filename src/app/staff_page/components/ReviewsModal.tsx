@@ -28,11 +28,31 @@ export default function ReviewsModal({ restaurantId, reviews, onClose, onRefresh
 
   const restaurantName = reviews[0]?.restaurantName || "Restaurant";
 
-  // ============================================================
-  // DELETE FUNCTION - DIKOMEN (staff tak boleh delete buat masa ni)
-  // Buka komen balik kalau nak enable
-  // ============================================================
-  /*
+  // Function to update restaurant rating after review deletion
+  const updateRestaurantRating = async (restaurantId: string) => {
+    try {
+      const reviewsQuery = query(
+        collection(db, "reviews"), 
+        where("restaurantId", "==", restaurantId)
+      );
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const allReviews = reviewsSnapshot.docs.map(doc => doc.data());
+      
+      const totalRating = allReviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+      const newRating = allReviews.length > 0 ? totalRating / allReviews.length : 0;
+      
+      await updateDoc(doc(db, "restaurants", restaurantId), {
+        rating: newRating,
+        totalReviews: allReviews.length
+      });
+      
+      console.log(`Restaurant ${restaurantId} updated: rating=${newRating}, totalReviews=${allReviews.length}`);
+    } catch (error) {
+      console.error("Error updating restaurant rating:", error);
+    }
+  };
+
+  // DELETE FUNCTION - UNCOMMENT (staff boleh delete)
   const handleDeleteReview = async (reviewId: string) => {
     if (!confirm("Are you sure you want to delete this review?")) return;
     
@@ -40,6 +60,7 @@ export default function ReviewsModal({ restaurantId, reviews, onClose, onRefresh
     setMessage("");
     
     try {
+      // STEP 1: Get the review to find restaurantId
       const reviewRef = doc(db, "reviews", reviewId);
       const reviewSnap = await getDoc(reviewRef);
       
@@ -53,37 +74,17 @@ export default function ReviewsModal({ restaurantId, reviews, onClose, onRefresh
       
       console.log("Deleting review for restaurant:", targetRestaurantId);
       
+      // STEP 2: Delete the review
       await deleteDoc(reviewRef);
       
-      const reviewsQueryRef = query(
-        collection(db, "reviews"), 
-        where("restaurantId", "==", targetRestaurantId)
-      );
-      const remainingReviewsSnap = await getDocs(reviewsQueryRef);
-      const remainingReviews = remainingReviewsSnap.docs.map(doc => doc.data());
-      
-      console.log("Remaining reviews count:", remainingReviews.length);
-      
-      let newRating = 0;
-      let totalReviews = remainingReviews.length;
-      
-      if (remainingReviews.length > 0) {
-        const totalRating = remainingReviews.reduce((sum, r) => sum + (r.rating || 0), 0);
-        newRating = totalRating / remainingReviews.length;
+      // STEP 3: Update restaurant rating
+      if (targetRestaurantId) {
+        await updateRestaurantRating(targetRestaurantId);
       }
-      
-      console.log("New rating calculated:", newRating);
-      
-      const restaurantRef = doc(db, "restaurants", targetRestaurantId);
-      await updateDoc(restaurantRef, {
-        rating: newRating,
-        totalReviews: totalReviews
-      });
-      
-      console.log("Restaurant updated successfully!");
       
       setMessage("✅ Review deleted & rating updated!");
       
+      // STEP 4: Refresh the staff page data
       await onRefresh();
       
       setTimeout(() => setMessage(""), 2000);
@@ -95,7 +96,6 @@ export default function ReviewsModal({ restaurantId, reviews, onClose, onRefresh
       setDeletingId(null);
     }
   };
-  */
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -156,11 +156,7 @@ export default function ReviewsModal({ restaurantId, reviews, onClose, onRefresh
                       )}
                     </div>
                     
-                    {/* ============================================================
-                         DELETE BUTTON - DIKOMEN (staff tak boleh delete)
-                         Buka komen balik kalau nak enable
-                    ============================================================ */}
-                    {/*
+                    
                     <button
                       onClick={() => handleDeleteReview(review.id)}
                       disabled={deletingId === review.id}
@@ -173,12 +169,6 @@ export default function ReviewsModal({ restaurantId, reviews, onClose, onRefresh
                         <Trash2 className="w-4 h-4" />
                       )}
                     </button>
-                    */}
-                    
-                    {/* TEMPORARY: Indicator staff tak boleh delete - boleh buang nanti */}
-                    <div className="ml-3 p-2 text-gray-300" title="Staff cannot delete reviews (disabled)">
-                      <Trash2 className="w-4 h-4 opacity-30" />
-                    </div>
                   </div>
                 </div>
               ))}
