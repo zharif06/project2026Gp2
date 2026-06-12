@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, deleteDoc, doc, where, getDoc, updateDoc } from "firebase/firestore";
 import { Star, Trash2, MessageSquare, Search, Filter, ThumbsUp, Flag } from "lucide-react";
 
 interface ReviewsManagementProps {
@@ -26,14 +26,55 @@ export default function ReviewsManagement({ reviews, onRefresh }: ReviewsManagem
     setSortedReviews(sorted);
   }, [reviews]);
 
+  // Function to update restaurant rating after review deletion
+  const updateRestaurantRating = async (restaurantId: string) => {
+    try {
+      // Get all remaining reviews for this restaurant
+      const reviewsQuery = query(
+        collection(db, "reviews"), 
+        where("restaurantId", "==", restaurantId)
+      );
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const allReviews = reviewsSnapshot.docs.map(doc => doc.data());
+      
+      // Calculate new rating
+      const totalRating = allReviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+      const newRating = allReviews.length > 0 ? totalRating / allReviews.length : 0;
+      
+      // Update restaurant document
+      await updateDoc(doc(db, "restaurants", restaurantId), {
+        rating: newRating,
+        totalReviews: allReviews.length
+      });
+      
+      console.log(`Restaurant ${restaurantId} updated: rating=${newRating}, totalReviews=${allReviews.length}`);
+    } catch (error) {
+      console.error("Error updating restaurant rating:", error);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this review? This action cannot be undone.")) return;
+    
     try {
+      // Get review data first to know which restaurant
+      const reviewDoc = await getDoc(doc(db, "reviews", id));
+      const reviewData = reviewDoc.data();
+      const restaurantId = reviewData?.restaurantId;
+      
+      // Delete the review
       await deleteDoc(doc(db, "reviews", id));
-      setMessage({ type: "success", text: "✅ Review deleted!" });
+      
+      // Update restaurant rating if restaurantId exists
+      if (restaurantId) {
+        await updateRestaurantRating(restaurantId);
+      }
+      
+      setMessage({ type: "success", text: "✅ Review deleted & rating updated!" });
       onRefresh();
       setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     } catch (error) {
+      console.error("Error deleting review:", error);
       setMessage({ type: "error", text: "❌ Failed to delete" });
     }
   };
@@ -103,7 +144,7 @@ export default function ReviewsManagement({ reviews, onRefresh }: ReviewsManagem
         {filteredReviews.map((review, index) => (
           <div key={review.id} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
             {index === 0 && (
-              <div className="mb-2 text-xs text-blue-500 font-semibold">📌 Latest Review</div>
+              <div className="mb-2 text-xs text-blue-500 font-semibold">🆕 Latest Review</div>
             )}
             <div className="flex justify-between items-start">
               <div className="flex-1">
