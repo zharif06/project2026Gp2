@@ -15,6 +15,11 @@ interface ReviewItemProps {
 export default function ReviewItem({ review, restaurantName, isLatest, onRefresh }: ReviewItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // ============================================================
+  // DELETE FUNCTION - DIKOMEN (staff tak boleh delete buat masa ni)
+  // Buka komen balik kalau nak enable
+  // ============================================================
+  /*
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this review?")) return;
     setIsDeleting(true);
@@ -28,14 +33,17 @@ export default function ReviewItem({ review, restaurantName, isLatest, onRefresh
       setIsDeleting(false);
     }
   };
+  */
 
   return (
     <div className={`border rounded-lg p-4 ${isLatest ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}>
+      {/* TAMPILAN "LATEST REVIEW" - INI YANG ROSAK SEBELUM NI */}
       {isLatest && (
         <div className="mb-2 text-xs text-blue-600 font-semibold flex items-center gap-1">
           <Star className="w-3 h-3 fill-current" /> Latest Review
         </div>
       )}
+      
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
@@ -56,6 +64,12 @@ export default function ReviewItem({ review, restaurantName, isLatest, onRefresh
             </div>
           )}
         </div>
+        
+        {/* ============================================================
+             DELETE BUTTON - DIKOMEN (staff tak boleh delete)
+             Buka komen balik kalau nak enable
+        ============================================================ */}
+        {/*
         <button
           onClick={handleDelete}
           disabled={isDeleting}
@@ -64,6 +78,12 @@ export default function ReviewItem({ review, restaurantName, isLatest, onRefresh
         >
           {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
         </button>
+        */}
+        
+        {/* TEMPORARY: Indicator staff tak boleh delete - boleh buang nanti */}
+        <div className="ml-3 p-2 text-gray-300" title="Staff cannot delete reviews (disabled)">
+          <Trash2 className="w-4 h-4 opacity-30" />
+        </div>
       </div>
     </div>
   );
