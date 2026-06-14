@@ -15,8 +15,6 @@ import {
   Compass,
   TrendingUp,
   HelpCircle,
-  Sun,
-  Moon,
   Menu,
   X
 } from "lucide-react";
@@ -294,15 +292,9 @@ export default function UserPage() {
               </div>
             </div>
 
-            {/* RIGHT SECTION - User menu */}
+            {/* RIGHT SECTION - User menu (Tanpa Dark Mode Toggle) */}
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Dark mode toggle */}
-              <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`p-1.5 sm:p-2 rounded-full transition-colors ${isDarkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
-              >
-                {isDarkMode ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-              </button>
+              {/* DARK MODE TOGGLE BUTTON REMOVED */}
 
               {/* User info - hidden on mobile */}
               <div className="hidden sm:block text-right">
