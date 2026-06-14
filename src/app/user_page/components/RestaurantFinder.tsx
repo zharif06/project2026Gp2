@@ -89,7 +89,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
 
   const cuisines = ["All", "Malay", "Chinese", "Indian", "Western", "Japanese", "Korean", "Thai", "Indonesian", "Vietnamese", "Arabic"];
   const ratings = ["All", "5", "4", "3", "2", "1"];
-  const states = ["All", "Selangor", "Kuala Lumpur", "Penang", "Johor", "Perak", "Sabah", "Sarawak"];
+const states = ["All", "Selangor", "Kuala Lumpur", "Penang", "Johor", "Perak", "Perlis", "Kedah", "Kelantan", "Terengganu", "Pahang", "Melaka", "Negeri Sembilan", "Sabah", "Sarawak", "Labuan", "Putrajaya"];
   
   const sortOptions = [
     { value: "rating", label: "Highest Rated" },
