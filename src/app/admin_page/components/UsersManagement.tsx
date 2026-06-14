@@ -237,7 +237,7 @@ export default function UsersManagement({ users, currentUser, onRefresh }: Users
               <div className="p-3 bg-blue-50 rounded-lg">
                 <p className="text-blue-800">Click <strong>"Open Firebase Console"</strong> button</p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 text-black">
                 <p>1️⃣ Go to Authentication → Users → Add user</p>
                 <p>2️⃣ Enter email & password, click Add user</p>
                 <p>3️⃣ Copy the User UID</p>
