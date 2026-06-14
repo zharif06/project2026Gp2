@@ -1,6 +1,6 @@
 "use client";
 
-import { Utensils, LogOut, Bell, Menu, User, ChevronDown } from "lucide-react";
+import { Utensils, LogOut, Menu, User, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 interface StaffHeaderProps {
@@ -10,7 +10,6 @@ interface StaffHeaderProps {
 }
 
 export default function StaffHeader({ user, onLogout, onToggleSidebar }: StaffHeaderProps) {
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
@@ -38,26 +37,7 @@ export default function StaffHeader({ user, onLogout, onToggleSidebar }: StaffHe
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 rounded-lg hover:bg-gray-100 relative transition-colors min-h-[44px] min-w-[44px]"
-              >
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
-                  <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-xl">
-                    <p className="font-semibold text-gray-800 text-sm sm:text-base">Notifications</p>
-                  </div>
-                  <div className="p-3 sm:p-4 text-center text-gray-500 text-xs sm:text-sm">
-                    No new notifications
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* BELL BUTTON REMOVED */}
 
             <div className="relative">
               <button
