@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase";
-import { collection, getDocs, query, where, addDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, addDoc, deleteDoc, doc, onSnapshot, getDocs } from "firebase/firestore";
 import { 
   MapPin, 
   Search, 
@@ -57,7 +57,6 @@ interface RestaurantFinderProps {
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-// Budget options based on menu price
 const budgetOptions = [
   { value: "any", label: "Any Price", min: 0, max: 9999 },
   { value: "under10", label: "Under RM 10", min: 0, max: 10 },
@@ -107,31 +106,36 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     { value: 10, label: "Within 10 km" }
   ];
 
+  // ============================================================
+  // REAL-TIME LISTENER - Auto update bila data berubah di Firestore
+  // ============================================================
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      setUser(user);
-      await fetchRestaurants();
-      if (user) {
-        await fetchUserInteractions(user.uid);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const fetchRestaurants = async () => {
-    try {
-      const q = query(collection(db, "restaurants"), where("status", "==", "approved"));
-      const querySnapshot = await getDocs(q);
+    setLoading(true);
+    
+    const q = query(collection(db, "restaurants"), where("status", "==", "approved"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const restaurantsData: Restaurant[] = [];
-      querySnapshot.forEach((doc) => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         restaurantsData.push({ 
           id: doc.id, 
-          ...data,
+          name: data.name || "",
+          cuisine: data.cuisine || "",
+          estimatedCost: data.estimatedCost || "RM 10-20",
+          address: data.address || "",
+          state: data.state || "",
+          area: data.area || "",
+          location: data.location || { lat: 0, lng: 0 },
+          description: data.description || "",
+          phone: data.phone || "",
+          hours: data.hours || "",
           openingDays: data.openingDays || [],
+          images: data.images || [],
           rating: data.rating || 0,
           totalReviews: data.totalReviews || 0,
+          status: data.status || "approved",
+          submittedAt: data.submittedAt || new Date().toISOString(),
           menu: data.menu || [],
           menuMinPrice: data.menuMinPrice || 0,
           menuMaxPrice: data.menuMaxPrice || 0,
@@ -140,10 +144,25 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
       });
       setRestaurants(restaurantsData);
       setFilteredRestaurants(restaurantsData);
-    } catch (error) {
+      setLoading(false);
+    }, (error) => {
       console.error("Error fetching restaurants:", error);
-    }
-  };
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch user interactions (loves & saves)
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      setUser(user);
+      if (user) {
+        await fetchUserInteractions(user.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchUserInteractions = async (userId: string) => {
     try {
@@ -316,7 +335,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
       filtered = filtered.filter(r => r.cuisine === selectedCuisine);
     }
 
-    // Filter by menu price budget
     if (selectedBudget !== "any") {
       const budget = budgetOptions.find(b => b.value === selectedBudget);
       if (budget) {
@@ -424,7 +442,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
   const getMenuInfo = (restaurant: Restaurant) => {
     const minPrice = restaurant.menuMinPrice;
     const maxPrice = restaurant.menuMaxPrice;
-    const avgPrice = restaurant.averagePrice;
     const hasMenu = restaurant.menu && restaurant.menu.length > 0;
     
     if (!hasMenu) {
@@ -444,7 +461,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
     return shortDays;
   };
 
-  if (loading) {
+  if (loading && restaurants.length === 0) {
     return (
       <div className="flex justify-center items-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -702,6 +719,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
                   </div>
                 </div>
                 <div className="p-4">
+                  {/* DESIGN ASAL - Rating di sebelah nama */}
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-bold text-gray-900">{restaurant.name}</h3>
                     <div className="flex items-center gap-1">
@@ -715,7 +733,6 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
                     <span className="truncate">{restaurant.address}</span>
                   </div>
                   
-                  {/* Menu info with "No menu available" indicator */}
                   <div className="flex items-center gap-2 text-gray-500 text-xs mb-3">
                     <ChefHat className="w-3 h-3" />
                     {menuInfo.hasMenu ? (
