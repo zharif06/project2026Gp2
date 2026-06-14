@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { db } from "@/lib/firebase";
-import { deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { Star, Trash2, Loader2 } from "lucide-react";
 
 interface ReviewItemProps {
@@ -15,12 +15,41 @@ interface ReviewItemProps {
 export default function ReviewItem({ review, restaurantName, isLatest, onRefresh }: ReviewItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // DELETE FUNCTION - UNCOMMENT (staff boleh delete)
+  // Function to update restaurant rating after review deletion
+  const updateRestaurantRating = async (restaurantId: string) => {
+    try {
+      const reviewsQuery = query(
+        collection(db, "reviews"), 
+        where("restaurantId", "==", restaurantId)
+      );
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const allReviews = reviewsSnapshot.docs.map(doc => doc.data());
+      
+      const totalRating = allReviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+      const newRating = allReviews.length > 0 ? totalRating / allReviews.length : 0;
+      
+      await updateDoc(doc(db, "restaurants", restaurantId), {
+        rating: newRating,
+        totalReviews: allReviews.length
+      });
+      
+      console.log(`[ReviewItem] Restaurant ${restaurantId} updated: rating=${newRating}, totalReviews=${allReviews.length}`);
+    } catch (error) {
+      console.error("Error updating restaurant rating:", error);
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this review?")) return;
     setIsDeleting(true);
     try {
+      // Delete the review
       await deleteDoc(doc(db, "reviews", review.id));
+      
+      // Update restaurant rating
+      await updateRestaurantRating(review.restaurantId);
+      
+      // Refresh the page data
       await onRefresh();
     } catch (error) {
       console.error("Error deleting review:", error);
@@ -57,7 +86,6 @@ export default function ReviewItem({ review, restaurantName, isLatest, onRefresh
             </div>
           )}
         </div>
-        
         
         <button
           onClick={handleDelete}
