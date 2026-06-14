@@ -89,7 +89,7 @@ export default function RestaurantFinder({ setCurrentPage, setSelectedRestaurant
   const [loading, setLoading] = useState(true);
 
   const cuisines = ["All", "Malay", "Chinese", "Indian", "Western", "Japanese", "Korean", "Thai", "Indonesian", "Vietnamese", "Arabic"];
-  const ratings = ["All", "4", "3", "2", "1"];
+  const ratings = ["All", "5", "4", "3", "2", "1"];
   const states = ["All", "Selangor", "Kuala Lumpur", "Penang", "Johor", "Perak", "Sabah", "Sarawak"];
   
   const sortOptions = [
